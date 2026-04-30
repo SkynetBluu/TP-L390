@@ -210,7 +210,7 @@
         "blueman-applet"
         "bluelight-auto"
         "perf-mode-daemon"
-        "swayosd-server"
+        "sleep 2 && swayosd-server"
       ];
 
       "$mod" = "SUPER";
