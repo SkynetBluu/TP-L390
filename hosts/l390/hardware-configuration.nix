@@ -28,7 +28,7 @@
     };
 
   fileSystems."/boot" =
-    { device = "/dev/disk/by-uuid/66EA-3FC3";
+    { device = lib.mkForce "/dev/disk/by-uuid/66EA-3FC3";
       fsType = "vfat";
       options = [ "fmask=0077" "dmask=0077" ];
     };
