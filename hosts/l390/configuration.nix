@@ -64,7 +64,6 @@
 
     # Desktop
     waybar
-    nautilus
     rofi
     cliphist
     awww
@@ -140,6 +139,7 @@
     # USB flasher
     popsicle
     papirus-icon-theme
+    yazi
   ];
 
   # ── Services ──────────────────────────────────────────────────────────────

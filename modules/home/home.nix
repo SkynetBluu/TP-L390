@@ -219,7 +219,7 @@
       bind = [
         "$mod, Return,      exec, alacritty"
         "$mod, B,           exec, brave"
-        "$mod, E,           exec, nautilus"
+        "$mod, E,           exec, alacritty -e yazi"
         "$mod, Space,       exec, rofi -show drun"
         "$mod, O,           exec, quick-notes"
         "$mod SHIFT, S,     exec, grim -g \"$(slurp)\" - | wl-copy"
