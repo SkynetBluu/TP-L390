@@ -19,12 +19,14 @@
   # DNS — use systemd-resolved with DNSSEC
   services.resolved = {
     enable = true;
-    dnssec = "allow-downgrade";
-    domains = [ "~." ];
-    fallbackDns = [
-      "9.9.9.9"       # Quad9
-      "149.112.112.112"
-      "2620:fe::fe"
-    ];
+    settings.Resolve = {
+      DNSSEC = "allow-downgrade";
+      Domains = [ "~." ];
+      FallbackDNS = [
+	"9.9.9.9"
+	"149.112.112.112"
+	"2620:fe::fe"
+      ];
+    };
   };
 }

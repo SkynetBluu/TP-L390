@@ -19,7 +19,7 @@
       options = [ "subvol=@" ];
     };
 
-  boot.initrd.luks.devices."cryptroot".device = "/dev/disk/by-uuid/f41dbd1f-962c-4e19-a876-a5be6f544d2b";
+  boot.initrd.luks.devices."cryptroot".device = lib.mkForce "/dev/disk/by-uuid/f41dbd1f-962c-4e19-a876-a5be6f544d2b";
 
   fileSystems."/.snapshots" =
     { device = "/dev/mapper/cryptroot";

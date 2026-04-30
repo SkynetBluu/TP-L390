@@ -35,7 +35,7 @@
 
   programs.git = {
     enable = true;
-    extraConfig = {
+    settings = {
       user = {
         name  = "nimbus";
         email = "redactedusername@users.noreply.github.com";
