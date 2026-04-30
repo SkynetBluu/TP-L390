@@ -1,7 +1,7 @@
 # modules/system/boot.nix
 # Boot configuration — systemd-boot, LUKS, Btrfs initrd, hibernation
 
-{ config, pkgs, ... }:
+{ config, lib, pkgs, ... }:
 
 {
   boot = {
@@ -32,10 +32,10 @@
           allowDiscards    = true;
           bypassWorkqueues = true;
         };
-        cryptswap = {
-          device        = "/dev/disk/by-partlabel/swap";
-          allowDiscards = true;
-        };
+	cryptswap = {
+	  device = lib.mkForce "/dev/disk/by-uuid/5dec3953-49d1-4e64-9013-788968bf6079";
+	  allowDiscards = true;
+	};
       };
     };
 
