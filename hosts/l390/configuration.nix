@@ -70,7 +70,7 @@
     swww
     mako
     brightnessctl
-    polkit-kde-agent
+    kdePackages.polkit-kde-agent-1
 
     # Core utilities
     git
