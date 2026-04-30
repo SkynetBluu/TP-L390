@@ -67,7 +67,7 @@
     nautilus
     rofi
     cliphist
-    swww
+    awww
     mako
     brightnessctl
     kdePackages.polkit-kde-agent-1

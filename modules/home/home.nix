@@ -203,7 +203,7 @@
       exec-once = [
         "waybar"
         "mako"
-        "swww-daemon"
+        "awww"
         "/run/current-system/sw/libexec/polkit-kde-authentication-agent-1"
         "wl-paste --type text --watch cliphist store"
         "nm-applet --indicator"
