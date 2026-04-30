@@ -1,7 +1,7 @@
 # hosts/l390/configuration.nix
 # Main NixOS configuration for ThinkPad L390 (Intel i5-8365U / UHD 620)
 
-{ config, pkgs, inputs, ... }:
+{ config, pkgs, lib, inputs, ... }:
 
 {
   # ── System ────────────────────────────────────────────────────────────────
@@ -56,7 +56,7 @@
   # ── Boot / Hibernation ────────────────────────────────────────────────────
   # After install, verify UUID: blkid /dev/sda3
   # Update to: boot.resumeDevice = "/dev/disk/by-uuid/YOUR-UUID";
-  boot.resumeDevice = "/dev/disk/by-label/cryptswap";
+  boot.resumeDevice = lib.mkForce "/dev/mapper/cryptswap";
 
   # ── Packages ──────────────────────────────────────────────────────────────
 
