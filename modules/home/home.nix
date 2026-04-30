@@ -45,6 +45,7 @@
       core.editor        = "nvim";
       color.ui           = true;
     };
+    signing.format = "openpgp"; # silence stateVersion warning
   };
 
   programs.delta = {
@@ -184,12 +185,7 @@
         };
       };
 
-      gestures = {
-        workspace_swipe         = true;
-        workspace_swipe_fingers = 3;
-      };
-
-      dwindle = { pseudotile = true; preserve_split = true; };
+      dwindle = { preserve_split = true; };
 
       misc = { force_default_wallpaper = 0; disable_hyprland_logo = true; };
 
@@ -285,8 +281,9 @@
   xdg = {
     enable = true;
     userDirs = {
-      enable            = true;
-      createDirectories = true;
+      enable                = true;
+      createDirectories     = true;
+      setSessionVariables   = true; # silence stateVersion warning
       desktop    = "${config.home.homeDirectory}/Desktop";
       documents  = "${config.home.homeDirectory}/Documents";
       download   = "${config.home.homeDirectory}/Downloads";
