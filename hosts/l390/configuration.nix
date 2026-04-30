@@ -138,6 +138,9 @@
     # USB flasher
     popsicle
     papirus-icon-theme
+    yt-dlp
+    mpv
+    yewtube
     nh
     yazi
   ];
