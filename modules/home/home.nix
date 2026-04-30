@@ -276,15 +276,9 @@
       windowrule = [
         "workspace 2, class:^(brave-browser)$"
         "float, class:^(org.gnome.Nautilus)$"
-        "size 900 600, class:^(org.gnome.Nautilus)$"
-        "center, class:^(org.gnome.Nautilus)$"
         "float, class:^(pavucontrol)$"
-        "center, class:^(pavucontrol)$"
         "float, class:^(quick-notes)$"
-        "size 800 600, class:^(quick-notes)$"
-        "center, class:^(quick-notes)$"
       ];
-
     };
   };
 
