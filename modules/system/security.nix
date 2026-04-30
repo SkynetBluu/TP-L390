@@ -48,6 +48,34 @@ let
     fi
   '';
 
+  # Claude Code wrapper — sandboxed with Firejail
+  # Only whitelists ~/projects, ~/.config/claude and ~/.local/share/claude
+  # Adjust ~/projects to wherever you keep your code
+  claude-wrapper = pkgs.writeShellScriptBin "claude" ''
+    FIREJAIL=/run/wrappers/bin/firejail
+    CLAUDE=${pkgs.claude-code}/bin/claude
+    SYSTEMD_RUN="${pkgs.systemd}/bin/systemd-run --user --quiet --scope --slice=app-claude.slice"
+
+    exec $SYSTEMD_RUN "$FIREJAIL" \
+      --noprofile \
+      --whitelist="$HOME/projects" \
+      --whitelist="$HOME/Documents" \
+      --whitelist="$HOME/.config/claude" \
+      --whitelist="$HOME/.local/share/claude" \
+      --whitelist="$HOME/.anthropic" \
+      --whitelist=/run/current-system \
+      --whitelist=/nix/store \
+      --env=HOME="$HOME" \
+      --caps.drop=all \
+      --nonewprivs \
+      --noroot \
+      --nosound \
+      --novideo \
+      --private-tmp \
+      --protocol=unix,inet,inet6 \
+      "$CLAUDE" "$@"
+  '';
+
   brave-hw-wrapper = pkgs.writeShellScriptBin "brave-hw" ''
     FIREJAIL=/run/wrappers/bin/firejail
     BRAVE=${brave-wayland}/bin/brave
@@ -108,6 +136,7 @@ in
   environment.systemPackages = [
     brave-wrapper
     brave-hw-wrapper
+    claude-wrapper
     pkgs.libsecret # secret-tool for debugging GNOME Keyring
   ];
 }

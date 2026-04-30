@@ -119,7 +119,6 @@
     neovim
 
     # Claude Code — from overlay
-    claude-code
 
     # Wayland
     wl-clipboard

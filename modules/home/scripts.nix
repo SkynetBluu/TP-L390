@@ -42,13 +42,10 @@ let
 
   bluelight-auto = pkgs.writeShellScriptBin "bluelight-auto" ''
     STATE_FILE="$HOME/.config/bluelight-state"
-    HOUR=$(date +%H)
-    if [ "$HOUR" -ge 20 ] || [ "$HOUR" -lt 7 ]; then
-      if ${pkgs.procps}/bin/pgrep -x hyprsunset > /dev/null; then exit 0; fi
-      echo "2000" > "$STATE_FILE"
-      ${pkgs.hyprsunset}/bin/hyprsunset -t 2000 &
-      disown
-    fi
+    if ${pkgs.procps}/bin/pgrep -x hyprsunset > /dev/null; then exit 0; fi
+    echo "2000" > "$STATE_FILE"
+    ${pkgs.hyprsunset}/bin/hyprsunset -t 2000 &
+    disown
   '';
 
   # ── Performance mode ─────────────────────────────────────────────────────
@@ -328,7 +325,7 @@ in
 
   # Start perf-mode-daemon and bluelight-auto at login
   systemd.user.services.perf-mode-daemon = {
-    Unit    = { Description = "Battery-aware Hyprland performance daemon"; After = [ "graphical-session.target" ]; };
+    Unit = { Description = "Battery-aware Hyprland performance daemon"; After = [ "graphical-session.target" ]; };
     Service = { ExecStart = "${perf-mode-daemon}/bin/perf-mode-daemon"; Restart = "on-failure"; };
     Install = { WantedBy = [ "graphical-session.target" ]; };
   };
