@@ -121,9 +121,9 @@
       free = "free -h";
 
       # NixOS shortcuts
-      rebuild = "sudo nixos-rebuild switch --flake ~/.config/nixos#l390";
-      update = "nix flake update ~/.config/nixos";
-      cleanup = "sudo nix-collect-garbage -d";
+      rebuild = "nh os switch ~/.config/nixos";
+      update = "nh os switch --update ~/.config/nixos";
+      cleanup = "nh clean all";
 
       # Claude Code update helper
       update-claude-code = "echo 'Update overlays/claude-code-latest.nix with latest version and hash'";
