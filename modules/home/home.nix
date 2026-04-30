@@ -21,6 +21,7 @@
     ./gtk.nix
     ./desktop-entries.nix
     ./scripts.nix
+    ./waybar.nix
   ];
 
   # ── Packages ──────────────────────────────────────────────────────────────
@@ -201,7 +202,6 @@
       misc = { force_default_wallpaper = 0; disable_hyprland_logo = true; };
 
       exec-once = [
-        "waybar"
         "mako"
         "awww"
         "/run/current-system/sw/libexec/polkit-kde-authentication-agent-1"
