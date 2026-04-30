@@ -273,7 +273,7 @@
         ",XF86AudioPrev, exec, playerctl prev"
       ];
 
-      windowrulev2 = [
+      windowrule = [
         "workspace 2, class:^(brave-browser)$"
         "float, class:^(org.gnome.Nautilus)$"
         "size 900 600, class:^(org.gnome.Nautilus)$"
