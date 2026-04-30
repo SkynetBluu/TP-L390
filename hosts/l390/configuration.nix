@@ -65,7 +65,7 @@
     # Desktop
     waybar
     nautilus
-    rofi-wayland
+    rofi
     cliphist
     swww
     mako
