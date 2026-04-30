@@ -14,14 +14,14 @@
 
     settings = {
       mainBar = {
-        layer    = "top";
+        layer = "top";
         position = "top";
-        height   = 34;
-        spacing  = 2;
+        height = 34;
+        spacing = 2;
 
-        modules-left   = [ "hyprland/workspaces" "hyprland/window" ];
+        modules-left = [ "hyprland/workspaces" "hyprland/window" ];
         modules-center = [ "clock" ];
-        modules-right  = [
+        modules-right = [
           "cpu"
           "memory"
           "temperature"
@@ -29,25 +29,32 @@
           "pulseaudio"
           "network"
           "battery"
+          "custom/power"
           "tray"
         ];
 
+        "custom/power" = {
+          format = "⏻";
+          tooltip = false;
+          on-click = "hyprctl dispatch exit";
+        };
+
         "hyprland/workspaces" = {
-          format           = "{name}";
-          sort-by-number   = true;
-          on-click         = "activate";
-          all-outputs      = true;
+          format = "{name}";
+          sort-by-number = true;
+          on-click = "activate";
+          all-outputs = true;
           persistent-workspaces = {
-            "1" = [];
-            "2" = [];
-            "3" = [];
-            "4" = [];
-            "5" = [];
+            "1" = [ ];
+            "2" = [ ];
+            "3" = [ ];
+            "4" = [ ];
+            "5" = [ ];
           };
         };
 
         "hyprland/window" = {
-          max-length       = 60;
+          max-length = 60;
           separate-outputs = true;
           rewrite = {
             "(.*) - Brave" = "$1";
@@ -56,7 +63,7 @@
         };
 
         clock = {
-          format     = " {:%H:%M}";
+          format = " {:%H:%M}";
           format-alt = " {:%A %d %B %Y — %H:%M}";
           tooltip-format = "<tt><small>{calendar}</small></tt>";
           calendar = {
@@ -66,14 +73,14 @@
         };
 
         cpu = {
-          format   = "󰻠 {usage}%";
+          format = "󰻠 {usage}%";
           interval = 5;
-          tooltip  = true;
+          tooltip = true;
           on-click = "alacritty -e btop";
         };
 
         memory = {
-          format   = "󰍛 {percentage}%";
+          format = "󰍛 {percentage}%";
           interval = 10;
           tooltip-format = "RAM: {used:0.1f}GB / {total:0.1f}GB";
           on-click = "alacritty -e btop";
@@ -82,33 +89,33 @@
         temperature = {
           hwmon-path = "/sys/class/hwmon/hwmon6/temp1_input";
           critical-threshold = 85;
-          format       = " {temperatureC}°C";
-          tooltip      = true;
+          format = " {temperatureC}°C";
+          tooltip = true;
         };
 
         backlight = {
-          device   = "intel_backlight";
-          format   = "{icon} {percent}%";
+          device = "intel_backlight";
+          format = "{icon} {percent}%";
           format-icons = [ "󰃞" "󰃟" "󰃠" ];
-          on-scroll-up   = "brightnessctl set +5%";
+          on-scroll-up = "brightnessctl set +5%";
           on-scroll-down = "brightnessctl set 5%-";
         };
 
         pulseaudio = {
-          format        = "{icon} {volume}%";
-          format-muted  = "󰝟 muted";
-          format-icons  = {
+          format = "{icon} {volume}%";
+          format-muted = "󰝟 muted";
+          format-icons = {
             default = [ "󰕿" "󰖀" "󰕾" ];
           };
-          on-click       = "pavucontrol";
-          on-scroll-up   = "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+";
+          on-click = "pavucontrol";
+          on-scroll-up = "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+";
           on-scroll-down = "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-";
           on-click-right = "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle";
         };
 
         network = {
-          format-wifi       = "󰤨 {signalStrength}%";
-          format-ethernet   = "󰈀 {bandwidthDownBytes}";
+          format-wifi = "󰤨 {signalStrength}% {essid}";
+          format-ethernet = "󰈀 {bandwidthDownBytes}";
           format-disconnected = "󰤭";
           tooltip-format-wifi = "󰤨 {essid}\nIP: {ipaddr}\nStrength: {signalStrength}%\n⇣ {bandwidthDownBytes}  ⇡ {bandwidthUpBytes}";
           tooltip-format-ethernet = "󰈀 {ifname}\nIP: {ipaddr}";
@@ -118,19 +125,19 @@
 
         battery = {
           states = {
-            warning  = 30;
+            warning = 30;
             critical = 15;
           };
-          format          = "{icon} {capacity}%";
+          format = "{icon} {capacity}%";
           format-charging = "󰂄 {capacity}%";
-          format-plugged  = "󰚥 {capacity}%";
-          format-icons    = [ "󰂎" "󰁺" "󰁻" "󰁼" "󰁽" "󰁾" "󰁿" "󰂀" "󰂁" "󰂂" "󰁹" ];
-          tooltip-format  = "{timeTo}\nPower: {power:.1f}W";
-          on-click        = "battery-mode";
+          format-plugged = "󰚥 {capacity}%";
+          format-icons = [ "󰂎" "󰁺" "󰁻" "󰁼" "󰁽" "󰁾" "󰁿" "󰂀" "󰂁" "󰂂" "󰁹" ];
+          tooltip-format = "{timeTo}\nPower: {power:.1f}W";
+          on-click = "battery-mode";
         };
 
         tray = {
-          spacing   = 8;
+          spacing = 8;
           icon-size = 16;
         };
       };
@@ -181,6 +188,18 @@
         font-size: 12px;
         padding: 0 8px;
       }
+
+      /* Custom Power */
+      #custom-power {
+        color: ${theme.colors.red};
+        padding: 0 10px;
+        font-size: 16px;
+      }
+      #custom-power:hover {
+        background: alpha(${theme.colors.red}, 0.1);
+        border-radius: 4px;
+      }
+
 
       /* Clock */
       #clock {
