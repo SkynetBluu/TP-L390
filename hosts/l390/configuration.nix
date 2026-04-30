@@ -139,6 +139,7 @@
 
     # USB flasher
     popsicle
+    papirus-icon-theme
   ];
 
   # ── Services ──────────────────────────────────────────────────────────────

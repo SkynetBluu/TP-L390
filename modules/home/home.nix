@@ -22,6 +22,7 @@
     ./desktop-entries.nix
     ./scripts.nix
     ./waybar.nix
+    ./rofi.nix
   ];
 
   # ── Packages ──────────────────────────────────────────────────────────────
