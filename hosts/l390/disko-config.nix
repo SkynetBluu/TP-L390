@@ -50,28 +50,23 @@
 
             # Swap partition inside LUKS
             # 16GB — matches RAM for full hibernation support
-            swap = {
-              size = "16G";
-              priority = 3;
-              content = {
-                type = "luks";
-                name = "cryptswap";
-                settings = {
-                  # Random key each boot — swap doesn't need persistence
-                  keyFile = "/dev/urandom";
-                  extraFormatArgs = [ "--batch-mode" ];
-                  extraOpenArgs = [
-                    "--allow-discards"
-                    "--key-size" "512"
-                    "--cipher" "aes-xts-plain64"
-                  ];
-                };
-                content = {
-                  type = "swap";
-                  resumeDevice = true; # Enable hibernation
-                };
-              };
-            };
+            
+	    swap = {
+	      size = "16G";
+	      priority = 3;
+	      content = {
+		type = "luks";
+		name = "cryptswap";
+		settings = {
+		  allowDiscards = true;
+		};
+		content = {
+		  type = "swap";
+		  resumeDevice = true;
+		};
+	      };
+	    };
+
 
             # Root partition — LUKS encrypted Btrfs
             root = {
@@ -83,13 +78,6 @@
                 # Passphrase will be prompted during disko run
                 settings = {
                   allowDiscards = true; # SSD TRIM support
-                  extraFormatArgs = [
-                    "--type" "luks2"
-                    "--cipher" "aes-xts-plain64"
-                    "--key-size" "512"
-                    "--hash" "sha256"
-                    "--iter-time" "5000" # ~5s unlock time, good security balance
-                  ];
                 };
                 content = {
                   type = "btrfs";
