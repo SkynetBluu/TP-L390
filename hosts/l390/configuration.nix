@@ -7,7 +7,7 @@
   # ── System ────────────────────────────────────────────────────────────────
 
   networking.hostName = "l390";
-  time.timeZone       = "Europe/London";
+  time.timeZone = "Europe/London";
 
   system.stateVersion = "24.11"; # Do not change after first install
 
@@ -18,7 +18,7 @@
   # Intel UHD 620 graphics
   # Mesa is pinned to Hyprland's flake input in modules/system/hyprland.nix
   hardware.graphics = {
-    enable      = true;
+    enable = true;
     enable32Bit = true;
     extraPackages = with pkgs; [
       intel-media-driver
@@ -30,7 +30,7 @@
   hardware.enableRedistributableFirmware = true;
 
   hardware.bluetooth = {
-    enable      = true;
+    enable = true;
     powerOnBoot = true;
   };
 
@@ -39,14 +39,14 @@
   services.tlp = {
     enable = true;
     settings = {
-      CPU_SCALING_GOVERNOR_ON_AC    = "performance";
-      CPU_SCALING_GOVERNOR_ON_BAT   = "powersave";
-      CPU_ENERGY_PERF_POLICY_ON_AC  = "performance";
+      CPU_SCALING_GOVERNOR_ON_AC = "performance";
+      CPU_SCALING_GOVERNOR_ON_BAT = "powersave";
+      CPU_ENERGY_PERF_POLICY_ON_AC = "performance";
       CPU_ENERGY_PERF_POLICY_ON_BAT = "power";
-      SATA_LINKPWR_ON_BAT           = "med_power_with_dipm";
-      USB_AUTOSUSPEND               = 1;
-      START_CHARGE_THRESH_BAT0      = 20;
-      STOP_CHARGE_THRESH_BAT0       = 80;
+      SATA_LINKPWR_ON_BAT = "med_power_with_dipm";
+      USB_AUTOSUSPEND = 1;
+      START_CHARGE_THRESH_BAT0 = 20;
+      STOP_CHARGE_THRESH_BAT0 = 80;
     };
   };
 
@@ -61,24 +61,53 @@
   # ── Packages ──────────────────────────────────────────────────────────────
 
   environment.systemPackages = with pkgs; [
+
+    # Desktop
+    waybar
+    nautilus
+    rofi-wayland
+    cliphist
+    swww
+    mako
+    brightnessctl
+    polkit-kde-agent
+
     # Core utilities
-    git wget curl unzip zip
-    htop btop tree
-    ripgrep fd jq fzf
-    vim nano
+    git
+    wget
+    curl
+    unzip
+    zip
+    htop
+    btop
+    tree
+    ripgrep
+    fd
+    jq
+    fzf
+    vim
+    nano
 
     # Hardware / system tools
-    pciutils usbutils lshw
-    smartmontools powertop nvme-cli
+    pciutils
+    usbutils
+    lshw
+    smartmontools
+    powertop
+    nvme-cli
 
     # Btrfs
-    btrfs-progs compsize
+    btrfs-progs
+    compsize
 
     # Networking
     networkmanagerapplet
 
     # Disk tools
-    parted gparted ntfs3g exfatprogs
+    parted
+    gparted
+    ntfs3g
+    exfatprogs
 
     # Terminal
     alacritty
@@ -87,16 +116,20 @@
     brave
 
     # Editors
-    vscode neovim
+    vscode
+    neovim
 
     # Claude Code — from overlay
     claude-code
 
     # Wayland
-    wl-clipboard wl-clipboard-x11 xdg-utils
+    wl-clipboard
+    wl-clipboard-x11
+    xdg-utils
 
     # Media
-    playerctl pavucontrol
+    playerctl
+    pavucontrol
 
     # Bluetooth
     blueman
@@ -111,8 +144,8 @@
   # ── Services ──────────────────────────────────────────────────────────────
 
   services.blueman.enable = true;
-  services.fwupd.enable   = true;
-  services.smartd.enable  = true;
+  services.fwupd.enable = true;
+  services.smartd.enable = true;
 
   # ── Secrets (sops-nix) ────────────────────────────────────────────────────
   # Configure after first boot once SSH host key exists:
@@ -139,8 +172,8 @@
     };
     gc = {
       automatic = true;
-      dates     = "weekly";
-      options   = "--delete-older-than 14d";
+      dates = "weekly";
+      options = "--delete-older-than 14d";
     };
   };
 }
