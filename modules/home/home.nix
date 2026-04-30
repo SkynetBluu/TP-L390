@@ -274,10 +274,10 @@
       ];
 
       windowrule = [
-        "workspace 2, class:^(brave-browser)$"
-        "float, class:^(org.gnome.Nautilus)$"
-        "float, class:^(pavucontrol)$"
-        "float, class:^(quick-notes)$"
+        "workspace 2, class:(brave-browser)"
+        "float, class:(org.gnome.Nautilus)"
+        "float, class:(pavucontrol)"
+        "float, class:(quick-notes)"
       ];
     };
   };
