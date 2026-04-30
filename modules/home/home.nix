@@ -6,9 +6,9 @@
 {
   # ── Home Manager basics ───────────────────────────────────────────────────
 
-  home.username    = "nimbus";
+  home.username = "nimbus";
   home.homeDirectory = "/home/nimbus";
-  home.stateVersion  = "24.11"; # Do not change after first install
+  home.stateVersion = "24.11"; # Do not change after first install
 
   programs.home-manager.enable = true;
 
@@ -26,8 +26,15 @@
   # ── Packages ──────────────────────────────────────────────────────────────
 
   home.packages = with pkgs; [
-    btop tree ripgrep fd jq fzf
-    unzip zip p7zip
+    btop
+    tree
+    ripgrep
+    fd
+    jq
+    fzf
+    unzip
+    zip
+    p7zip
     lazygit
   ];
 
@@ -37,21 +44,21 @@
     enable = true;
     settings = {
       user = {
-        name  = "nimbus";
+        name = "nimbus";
         email = "redactedusername@users.noreply.github.com";
       };
       init.defaultBranch = "main";
-      pull.rebase        = false;
-      core.editor        = "nvim";
-      color.ui           = true;
+      pull.rebase = false;
+      core.editor = "nvim";
+      color.ui = true;
     };
     signing.format = "openpgp"; # silence stateVersion warning
   };
 
   programs.delta = {
-    enable  = true;
+    enable = true;
     options = {
-      navigate     = true;
+      navigate = true;
       line-numbers = true;
       syntax-theme = "Catppuccin-mocha";
     };
@@ -65,25 +72,29 @@
     enable = true;
     settings = {
       window = {
-        padding      = { x = 12; y = 12; };
-        decorations  = "none";
-        opacity      = 0.95;
+        padding = { x = 12; y = 12; };
+        decorations = "none";
+        opacity = 0.95;
         startup_mode = "Windowed";
       };
       scrolling.history = 10000;
       font = {
         normal = { family = theme.fonts.mono; style = "Regular"; };
-        bold   = { style = "Bold"; };
+        bold = { style = "Bold"; };
         italic = { style = "Italic"; };
-        size   = theme.fonts.monoSize + 1; # 13pt
+        size = theme.fonts.monoSize + 1; # 13pt
       };
       colors = {
         primary = { background = theme.colors.background; foreground = theme.colors.foreground; };
-        normal  = {
-          black = theme.colors.surface; red = theme.colors.red;
-          green = theme.colors.green;   yellow = theme.colors.yellow;
-          blue  = theme.colors.blue;    magenta = theme.colors.magenta;
-          cyan  = theme.colors.cyan;    white = theme.colors.foregroundDim;
+        normal = {
+          black = theme.colors.surface;
+          red = theme.colors.red;
+          green = theme.colors.green;
+          yellow = theme.colors.yellow;
+          blue = theme.colors.blue;
+          magenta = theme.colors.magenta;
+          cyan = theme.colors.cyan;
+          white = theme.colors.foregroundDim;
         };
       };
       keyboard.bindings = [
@@ -98,18 +109,18 @@
   programs.bash = {
     enable = true;
     shellAliases = {
-      ll    = "ls -alF";
-      la    = "ls -A";
-      ".."  = "cd ..";
+      ll = "ls -alF";
+      la = "ls -A";
+      ".." = "cd ..";
       "..." = "cd ../..";
-      grep  = "grep --color=auto";
-      df    = "df -h";
-      du    = "du -h";
-      free  = "free -h";
+      grep = "grep --color=auto";
+      df = "df -h";
+      du = "du -h";
+      free = "free -h";
 
       # NixOS shortcuts
       rebuild = "sudo nixos-rebuild switch --flake ~/.config/nixos#l390";
-      update  = "nix flake update ~/.config/nixos";
+      update = "nix flake update ~/.config/nixos";
       cleanup = "sudo nix-collect-garbage -d";
 
       # Claude Code update helper
@@ -129,17 +140,17 @@
     settings = {
       add_newline = true;
       format = "$directory$git_branch$git_status$nix_shell$cmd_duration$line_break$character";
-      directory   = { truncation_length = 3; style = "bold blue"; };
-      git_branch  = { symbol = " "; style = "bold purple"; };
-      nix_shell   = { symbol = " "; style = "bold cyan"; format = "[$symbol$state]($style) "; };
-      character   = { success_symbol = "[❯](bold green)"; error_symbol = "[❯](bold red)"; };
+      directory = { truncation_length = 3; style = "bold blue"; };
+      git_branch = { symbol = " "; style = "bold purple"; };
+      nix_shell = { symbol = " "; style = "bold cyan"; format = "[$symbol$state]($style) "; };
+      character = { success_symbol = "[❯](bold green)"; error_symbol = "[❯](bold red)"; };
     };
   };
 
   # ── Hyprland (home config) ────────────────────────────────────────────────
 
   wayland.windowManager.hyprland = {
-    enable  = true;
+    enable = true;
     package = inputs.hyprland.packages.${pkgs.system}.hyprland;
     xwayland.enable = true;
 
@@ -147,25 +158,25 @@
       monitor = "eDP-1,1920x1080@60,0x0,1";
 
       general = {
-        gaps_in  = 5;
+        gaps_in = 5;
         gaps_out = 10;
         border_size = 2;
-        "col.active_border"   = "rgba(89b4faee) rgba(cba6f7ee) 45deg";
+        "col.active_border" = "rgba(89b4faee) rgba(cba6f7ee) 45deg";
         "col.inactive_border" = "rgba(45475aaa)";
         layout = "dwindle";
       };
 
       decoration = {
-        rounding         = 8;
-        active_opacity   = 1.0;
+        rounding = 8;
+        active_opacity = 1.0;
         inactive_opacity = 0.92;
-        blur   = { enabled = true; size = 6; passes = 3; };
+        blur = { enabled = true; size = 6; passes = 3; };
         shadow = { enabled = true; range = 8; render_power = 2; color = "rgba(1a1a2eee)"; };
       };
 
       animations = {
         enabled = true;
-        bezier  = [ "easeOut, 0.16, 1, 0.3, 1" ];
+        bezier = [ "easeOut, 0.16, 1, 0.3, 1" ];
         animation = [
           "windows, 1, 4, easeOut, slide"
           "fade,    1, 4, easeOut"
@@ -174,14 +185,14 @@
       };
 
       input = {
-        kb_layout    = "gb";
+        kb_layout = "gb";
         follow_mouse = 1;
-        sensitivity  = 0;
+        sensitivity = 0;
         touchpad = {
-          natural_scroll       = true;
+          natural_scroll = true;
           disable_while_typing = true;
-          tap-to-click         = true;
-          scroll_factor        = 0.8;
+          tap-to-click = true;
+          scroll_factor = 0.8;
         };
       };
 
@@ -262,7 +273,7 @@
         ",XF86AudioPrev, exec, playerctl prev"
       ];
 
-      windowrulev2 = [
+      windowrule = [
         "workspace 2, class:^(brave-browser)$"
         "float, class:^(org.gnome.Nautilus)$"
         "size 900 600, class:^(org.gnome.Nautilus)$"
@@ -273,6 +284,7 @@
         "size 800 600, class:^(quick-notes)$"
         "center, class:^(quick-notes)$"
       ];
+
     };
   };
 
@@ -281,15 +293,15 @@
   xdg = {
     enable = true;
     userDirs = {
-      enable                = true;
-      createDirectories     = true;
-      setSessionVariables   = true; # silence stateVersion warning
-      desktop    = "${config.home.homeDirectory}/Desktop";
-      documents  = "${config.home.homeDirectory}/Documents";
-      download   = "${config.home.homeDirectory}/Downloads";
-      music      = "${config.home.homeDirectory}/Music";
-      pictures   = "${config.home.homeDirectory}/Pictures";
-      videos     = "${config.home.homeDirectory}/Videos";
+      enable = true;
+      createDirectories = true;
+      setSessionVariables = true; # silence stateVersion warning
+      desktop = "${config.home.homeDirectory}/Desktop";
+      documents = "${config.home.homeDirectory}/Documents";
+      download = "${config.home.homeDirectory}/Downloads";
+      music = "${config.home.homeDirectory}/Music";
+      pictures = "${config.home.homeDirectory}/Pictures";
+      videos = "${config.home.homeDirectory}/Videos";
     };
   };
 }
