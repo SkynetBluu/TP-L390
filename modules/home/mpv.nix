@@ -35,7 +35,7 @@ let
     echo "🔍 Searching YouTube for: $QUERY"
 
     RESULTS=$(${pkgs.yt-dlp}/bin/yt-dlp \
-      "ytsearch10:$QUERY" \
+      "ytsearch25:$QUERY" \
       --flat-playlist \
       --dump-json \
       --no-warnings \
