@@ -28,15 +28,15 @@
 - **Btrfs** with subvolumes (`@`, `@home`, `@nix`, `@snapshots`, `@log`) and zstd compression
 - **Hibernation** — swap encrypted with LUKS, resume device configured
 - **Hyprland** — Wayland compositor with UWSM, animations, gestures
-- **Catppuccin Mocha** — unified theme across all apps (Waybar, Rofi, Neovim, Alacritty, Yazi, Hyprlock)
-- **Firejail sandboxing** — Brave and Claude Code run in isolated sandboxes
+- **Catppuccin Mocha** — unified theme across all apps (Waybar, Rofi, Neovim, Alacritty, Hyprlock)
+- **Firejail sandboxing** — Brave, Brave HW profile, and Claude Code run in isolated sandboxes
 - **Home Manager** — fully declarative user environment
 - **TLP** — advanced laptop power management with ThinkPad charge thresholds
 - **PipeWire** — modern audio stack with SwayOSD OSD
 - **yt-dlp + mpv** — YouTube playback and download from the terminal
-- **Blue light filter** — hyprsunset with 8 levels, auto-enabled at 2500K
+- **Blue light filter** — hyprsunset with 8 levels, auto-enabled at 2000K on login
 - **Battery mode cycling** — conservation / balanced / full charge thresholds
-- **Performance mode daemon** — auto battery saver on unplug
+- **Performance mode daemon** — systemd user service, auto battery saver on unplug
 - **sops-nix** — encrypted secrets management (configured post-install)
 
 ---
@@ -58,25 +58,25 @@
 │   │   ├── theme.nix            # Catppuccin Mocha — single source of truth
 │   │   ├── waybar.nix           # Status bar
 │   │   ├── rofi.nix             # App launcher
-│   │   ├── yazi.nix             # File manager
 │   │   ├── neovim.nix           # Editor with LSP, treesitter, AI
-│   │   ├── hyprlock.nix         # Lock screen + idle daemon
+│   │   ├── hyprlock.nix         # Lock screen + idle daemon (hypridle)
 │   │   ├── mako.nix             # Notifications
 │   │   ├── swayosd.nix          # Volume/brightness OSD
-│   │   ├── gtk.nix              # GTK theming
+│   │   ├── gtk.nix              # GTK theming + cursor
 │   │   ├── mpv.nix              # mpv + yt-dlp + YouTube scripts
-│   │   └── scripts.nix          # Helper scripts
+│   │   ├── desktop-entries.nix  # XDG desktop entries + launcher scripts
+│   │   └── scripts.nix          # Helper scripts (battery, bluelight, wifi, etc.)
 │   └── system/                  # NixOS modules
 │       ├── boot.nix             # Bootloader, LUKS, kernel
-│       ├── hyprland.nix         # Hyprland system config, Mesa pin
+│       ├── hyprland.nix         # Hyprland system config, Mesa pin, suspend fix
 │       ├── networking.nix       # NetworkManager, DNS
-│       ├── security.nix         # Firejail, AppArmor, PAM, GnuPG
+│       ├── security.nix         # Firejail, AppArmor, PAM, GNOME Keyring
 │       ├── sound.nix            # PipeWire
 │       ├── fonts.nix            # System-wide fonts
 │       ├── locale.nix           # Locale, keyboard
 │       └── users.nix            # User accounts
 └── overlays/
-    └── claude-code-latest.nix   # Claude Code prebuilt binary
+    └── claude-code-latest.nix   # Claude Code prebuilt binary from npm
 └── wallpapers/
     └── hiroshi-tsubono-medium.jpg  # Default wallpaper
 ```
@@ -136,8 +136,10 @@ All colours and fonts are defined in `modules/home/theme.nix` and passed to ever
 | `Super + M` | Battery mode cycle |
 | `Super + Shift + M` | Performance mode cycle |
 | `Super + Shift + T` | Toggle touchpad |
-| `Super + F1` | System info |
+| `Super + F1` | System info panel |
 | `Super + F2` | WiFi reconnect |
+| `Super + Shift + F2` | WiFi scan (wofi picker) |
+| `Super + Ctrl + F2` | WiFi toggle on/off |
 | `Super + Shift + S` | Screenshot region → clipboard |
 | `Super + Shift + E` | Exit Hyprland |
 
@@ -199,10 +201,10 @@ reboot
 git clone https://github.com/SkynetBluu/TP-L390.git ~/.config/nixos
 ```
 
-**Update swap UUID** in `hosts/l390/configuration.nix`:
+**Update the cryptswap UUID** in `modules/system/boot.nix`:
 ```bash
-blkid /dev/sda3  # get UUID
-# update boot.resumeDevice = lib.mkForce "/dev/disk/by-uuid/YOUR-UUID";
+blkid /dev/sda3  # get UUID of the swap partition
+# update: cryptswap.device = lib.mkForce "/dev/disk/by-uuid/YOUR-UUID";
 ```
 
 **Set up sops-nix secrets** (after first boot):
@@ -224,13 +226,33 @@ cleanup   # nh clean all
 
 ---
 
+## Updating Claude Code
+
+The Claude Code overlay fetches a pinned binary from npm. To update:
+
+```bash
+# 1. Check latest version
+npm view @anthropic-ai/claude-code version
+
+# 2. Get the hash
+nix-prefetch-url "https://registry.npmjs.org/@anthropic-ai/claude-code-linux-x64/-/claude-code-linux-x64-VERSION.tgz"
+
+# 3. Convert to SRI format
+nix hash convert --hash-algo sha256 --to sri HASH
+
+# 4. Update version and sha256 in overlays/claude-code-latest.nix, then:
+rebuild
+```
+
+---
+
 ## YouTube / Media
 
 mpv is configured with yt-dlp for seamless YouTube playback.
 
 | Command | What it does |
 |---------|-------------|
-| `yt` | Yewtube — full TUI YouTube browser |
+| `yewtube` | Full TUI YouTube browser |
 | `yts <query>` | Search YouTube with fzf, play in mpv |
 | `ytp <url>` | Play URL directly in mpv |
 | `ytd <url> [video\|audio\|best]` | Download video |
@@ -260,7 +282,7 @@ mpv is configured with yt-dlp for seamless YouTube playback.
 ```
 /dev/sda1   1MB       BIOS boot gap
 /dev/sda2   512MB     EFI system partition (/boot)
-/dev/sda3   16GB      Swap (LUKS encrypted, random key)
+/dev/sda3   16GB      Swap (LUKS encrypted)
 /dev/sda4   ~449GB    Root (LUKS2 → Btrfs)
 ```
 
@@ -277,13 +299,14 @@ mpv is configured with yt-dlp for seamless YouTube playback.
 
 ## Security
 
-- Full disk encryption with LUKS2 (AES-XTS-PLAIN64, SHA-256)
-- Brave browser sandboxed with Firejail (strict profile, Downloads only)
-- Claude Code sandboxed with Firejail (projects + config dirs only)
+- Full disk encryption with LUKS2 on root and swap
+- Brave browser sandboxed with Firejail (strict profile, `~/Downloads` only)
+- `brave-hw` — separate Brave instance with its own profile and broader whitelist (for hardware/dev sites)
+- Claude Code sandboxed with Firejail (`~/projects`, `~/Documents`, `~/.config/claude`, `~/.local/share/claude`)
 - AppArmor enabled
 - sudo requires password (wheel group)
 - Passwordless sudo only for `tlp setcharge` (battery threshold management)
-- GNOME Keyring for VS Code credential storage
+- GNOME Keyring for VS Code / Electron credential storage
 - Root login disabled
 
 ---
@@ -296,3 +319,4 @@ mpv is configured with yt-dlp for seamless YouTube playback.
 - [nixos-hardware](https://github.com/NixOS/nixos-hardware) — ThinkPad X390 profile (closest match for L390)
 - [disko](https://github.com/nix-community/disko) — declarative disk partitioning
 - [home-manager](https://github.com/nix-community/home-manager) — user environment
+- [sops-nix](https://github.com/Mic92/sops-nix) — encrypted secrets management
