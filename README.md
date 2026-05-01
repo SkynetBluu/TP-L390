@@ -75,8 +75,8 @@
 │       ├── fonts.nix            # System-wide fonts
 │       ├── locale.nix           # Locale, keyboard
 │       └── users.nix            # User accounts
-└── overlays/
-    └── claude-code-latest.nix   # Claude Code prebuilt binary from npm
+├── overlays/
+│   └── claude-code-latest.nix   # Claude Code prebuilt binary from npm
 └── wallpapers/
     └── hiroshi-tsubono-medium.jpg  # Default wallpaper
 ```
