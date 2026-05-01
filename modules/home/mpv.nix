@@ -10,9 +10,9 @@ let
   yt-preview = pkgs.writeShellScriptBin "yt-preview" ''
     ID="$1"
     FILE="$2"
-    # yt-dlp outputs NDJSON (one object per line), not a JSON array
-    # Use grep+jq to find the matching entry
-    ${pkgs.gnugrep}/bin/grep "\"id\":\"$ID\"" "$FILE" | \
+    # yt-dlp outputs NDJSON (one object per line)
+    # Match with spaces around colon: "id": "VALUE"
+    ${pkgs.gnugrep}/bin/grep "\"id\": \"$ID\"" "$FILE" | \
     ${pkgs.jq}/bin/jq -r '
       "Title:    " + .title + "\n" +
       "Channel:  " + (.channel // "Unknown") + "\n" +
