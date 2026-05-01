@@ -277,6 +277,15 @@
         ",XF86AudioPrev, exec, playerctl prev"
       ];
 
+      windowrule = [
+        # Brave → workspace 2
+        "workspace 2, match:class brave-browser"
+
+        # quick-notes → float, sized, centered
+        "float on, match:class quick-notes"
+        "size 800 600, match:class quick-notes"
+        "center on, match:class quick-notes"
+      ];
     };
   };
 

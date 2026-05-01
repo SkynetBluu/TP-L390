@@ -239,41 +239,56 @@ let
 
   # ── System info ──────────────────────────────────────────────────────────
 
+  # ── System info ──────────────────────────────────────────────────────────
   sysinfo-panel = pkgs.writeShellScriptBin "sysinfo-panel" ''
-    set -euo pipefail
-    HOSTNAME=$(hostname)
-    KERNEL=$(uname -r)
-    UPTIME=$(uptime -p | sed 's/up //')
-    CPU_MODEL=$(${pkgs.gawk}/bin/awk -F': ' '/model name/{print $2; exit}' /proc/cpuinfo)
-    CPU_TEMP=$(cat /sys/class/thermal/thermal_zone0/temp 2>/dev/null | ${pkgs.gawk}/bin/awk '{printf "%.1f", $1/1000}')
-    MEM_INFO=$(free -h | ${pkgs.gawk}/bin/awk '/^Mem:/{print $3 "/" $2}')
-    MEM_PERCENT=$(free | ${pkgs.gawk}/bin/awk '/^Mem:/{printf "%.0f", $3/$2*100}')
-    DISK_INFO=$(df -h / | ${pkgs.gawk}/bin/awk 'NR==2{print $3 "/" $2 " (" $5 ")"}')
-    if [ -f /sys/class/power_supply/BAT0/capacity ]; then
-      BAT_CAP=$(cat /sys/class/power_supply/BAT0/capacity)
-      BAT_STATUS=$(cat /sys/class/power_supply/BAT0/status)
-      BATTERY="$BAT_CAP% ($BAT_STATUS)"
-    else
-      BATTERY="N/A"
-    fi
-    NET_IFACE=$(${pkgs.iproute2}/bin/ip route | ${pkgs.gawk}/bin/awk '/default/{print $5; exit}')
-    NET_IP=$(${pkgs.iproute2}/bin/ip -4 addr show "$NET_IFACE" 2>/dev/null | ${pkgs.gawk}/bin/awk '/inet /{print $2}' | cut -d'/' -f1)
-    # Intel UHD 620 doesn't expose GPU usage via sysfs — use intel_gpu_top if available
-    GPU_USAGE="N/A"
-    BLUELIGHT_STATE=$(cat "$HOME/.config/bluelight-state" 2>/dev/null || echo "off")
-    [ "$BLUELIGHT_STATE" = "off" ] && BLUELIGHT="Off" || BLUELIGHT="$BLUELIGHT_STATE K"
-    INFO="<b>󰌢 $HOSTNAME</b>
-    Kernel: $KERNEL | Uptime: $UPTIME
+            set -euo pipefail
+            HOSTNAME=$(hostname)
+            KERNEL=$(uname -r)
+            UPTIME=$(uptime -p | sed 's/up //')
+            CPU_MODEL=$(${pkgs.gawk}/bin/awk -F': ' '/model name/{print $2; exit}' /proc/cpuinfo)
+            CPU_TEMP=$(cat /sys/class/hwmon/hwmon6/temp1_input 2>/dev/null | ${pkgs.gawk}/bin/awk '{printf "%.1f°C", $1/1000}' || echo "N/A")
+            MEM_INFO=$(free -h | ${pkgs.gawk}/bin/awk '/^Mem:/{print $3 "/" $2}')
+            MEM_PERCENT=$(free | ${pkgs.gawk}/bin/awk '/^Mem:/{printf "%.0f", $3/$2*100}')
+            DISK_INFO=$(df -h / | ${pkgs.gawk}/bin/awk 'NR==2{print $3 "/" $2 " (" $5 ")"}')
+            if [ -f /sys/class/power_supply/BAT0/capacity ]; then
+              BAT_CAP=$(cat /sys/class/power_supply/BAT0/capacity)
+              BAT_STATUS=$(cat /sys/class/power_supply/BAT0/status)
+              BATTERY="$BAT_CAP% ($BAT_STATUS)"
+            else
+              BATTERY="N/A"
+            fi
+            NET_IFACE=$(${pkgs.iproute2}/bin/ip route | ${pkgs.gawk}/bin/awk '/default/{print $5; exit}')
+            NET_IP=$(${pkgs.iproute2}/bin/ip -4 addr show "$NET_IFACE" 2>/dev/null | ${pkgs.gawk}/bin/awk '/inet /{print $2}' | cut -d'/' -f1)
+            GPU_USAGE="N/A"
+            BLUELIGHT_STATE=$(cat "$HOME/.config/bluelight-state" 2>/dev/null || echo "off")
+            [ "$BLUELIGHT_STATE" = "off" ] && BLUELIGHT="Off" || BLUELIGHT="$BLUELIGHT_STATE K"
 
-    <b>󰻠 CPU</b>  $CPU_MODEL @ $CPU_TEMP°C
-    <b>󰍛 RAM</b>  $MEM_INFO ($MEM_PERCENT%)
-    <b>󰋊 Disk</b>  $DISK_INFO
-    <b>󰂄 Battery</b>  $BATTERY
-    <b>󰢮 GPU</b>  Intel UHD 620 ($GPU_USAGE)
-    <b>󰖩 Network</b>  $NET_IP
-    <b>󰖨 Filter</b>  $BLUELIGHT"
-    ${pkgs.libnotify}/bin/notify-send -t 10000 "System Info" "$INFO" -i "utilities-system-monitor"
+    TMPFILE="/tmp/sysinfo-panel-rows"
+        cat > "$TMPFILE" << EOF
+    󰌢   Host        $HOSTNAME
+    󰣇   Kernel      $KERNEL
+    󱦟   Uptime      $UPTIME
+    󰻠   CPU         $CPU_MODEL
+    󰔏   Temp        $CPU_TEMP
+    󰍛   RAM         $MEM_INFO ($MEM_PERCENT%)
+    󰋊   Disk        $DISK_INFO
+    󰂄   Battery     $BATTERY
+    󰢮   GPU         Intel UHD 620 ($GPU_USAGE)
+    󰖩   Network     $NET_IP ($NET_IFACE)
+    󰖨   Filter      $BLUELIGHT
+    EOF
+        ${pkgs.rofi}/bin/rofi \
+          -dmenu \
+          -p "󰋊 System" \
+          -input "$TMPFILE" \
+          -theme-str 'window {width: 680px;}' \
+          -theme-str 'listview {lines: 11; scrollbar: false; fixed-height: true;}' \
+          -theme-str 'entry {enabled: false;}' \
+          -theme-str 'textbox-prompt-colon {enabled: false;}' \
+          || true
+
   '';
+
 
   # ── hypr-current-workspace-launch ────────────────────────────────────────
 
