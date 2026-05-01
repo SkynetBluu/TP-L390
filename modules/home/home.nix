@@ -208,7 +208,7 @@
         "hypridle"
         "mako"
         "awww-daemon"
-        "awww img ~/.config/nixos/wallpapers/hiroshi-tsubono-medium.jpg"
+        "awww img $WALLPAPER"
         "/run/current-system/sw/libexec/polkit-kde-authentication-agent-1"
         "wl-paste --type text --watch cliphist store"
         "nm-applet --indicator"

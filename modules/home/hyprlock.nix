@@ -1,10 +1,23 @@
 # modules/home/hyprlock.nix
 # Hypridle + Hyprlock — idle daemon and lock screen
+#
+# 1920x1080 layout:
+#
+#   Centre (valign=center):
+#     Clock    position 0, 200
+#     Date     position 0, 120
+#     Input    position 0,  20
+#
+#   Side panels (valign=top):
+#     Y = distance down from top edge. Anchor = top of widget.
+#     Both panels start at Y=60 (60px from top).
+#     Heading at Y=60, body at Y = 60 + headingHeight + gap.
+#
+#   Bottom bar (valign=bottom, Y=20)
 
 { config, theme, ... }:
 
 let
-  # Convert "#RRGGBB" to hyprlock rgba(R, G, B, A)
   hexToRgba = hex: alpha:
     let
       hexDigit = c:
@@ -22,14 +35,38 @@ let
     in
     "rgba(${toString r}, ${toString g}, ${toString b}, ${alpha})";
 
-  bg     = hexToRgba theme.colors.background "1.0";
-  fg     = hexToRgba theme.colors.foreground "1.0";
-  dim    = hexToRgba theme.colors.comment "1.0";
+  bg = hexToRgba theme.colors.background "1.0";
+  fg = hexToRgba theme.colors.foreground "1.0";
+  dim = hexToRgba theme.colors.comment "1.0";
   accent = hexToRgba theme.colors.accent "1.0";
-  green  = hexToRgba theme.colors.green "1";
-  red    = hexToRgba theme.colors.red "1";
+  green = hexToRgba theme.colors.green "1";
+  red = hexToRgba theme.colors.red "1";
   border = hexToRgba theme.colors.border "1";
-  muted  = hexToRgba theme.colors.foregroundDim "1.0";
+  muted = hexToRgba theme.colors.foregroundDim "1.0";
+
+  mkLabel = text: color: size: x: y: halign: valign: ''
+    label {
+      monitor     =
+      text        = ${builtins.concatStringsSep "<br/>" text}
+      color       = ${color}
+      font_size   = ${toString size}
+      font_family = ${theme.fonts.mono}
+      position    = ${toString x}, ${toString y}
+      halign      = ${halign}
+      valign      = ${valign}
+    }
+  '';
+
+  # valign=top: Y is distance down from top edge, anchor = top of widget.
+  # Heading at headingY, body immediately below: bodyY = headingY + headingH + gap.
+  # headingH ≈ 20px for font_size=13.
+  mkSection = heading: rows: x: headingY: halign:
+    let
+      bodyY = headingY - 30; # heading height + gap
+    in
+    (mkLabel [ heading ] accent 13 x headingY halign "top")
+    +
+    (mkLabel rows dim 12 x bodyY halign "top");
 in
 {
   # ── Hypridle ──────────────────────────────────────────────────────────────
@@ -37,24 +74,20 @@ in
     general {
       lock_cmd         = pidof hyprlock || hyprlock
       before_sleep_cmd = loginctl lock-session
-      # Small delay gives Intel GPU/DRM time to reinitialise after s2idle
       after_sleep_cmd  = sleep 2 && hyprctl dispatch dpms on
     }
 
-    # Dim screen after 25 minutes
     listener {
       timeout    = 1500
       on-timeout = brightnessctl -s set 10
       on-resume  = brightnessctl -r
     }
 
-    # Lock screen after 30 minutes
     listener {
       timeout    = 1800
       on-timeout = loginctl lock-session
     }
 
-    # Suspend after 45 minutes — only on battery
     listener {
       timeout    = 2700
       on-timeout = sh -c '[ "$(cat /sys/class/power_supply/BAT0/status 2>/dev/null)" = "Discharging" ] && systemctl suspend'
@@ -71,12 +104,21 @@ in
       no_fade_out         = true
     }
 
+    # background {
+    #   monitor =
+    #   color = ${bg}
+    # }
+
     background {
-      monitor =
-      color = ${bg}
+      monitor     =
+      path        = $WALLPAPER
+      blur_passes = 2
+      blur_size   = 0.001
+      brightness  = 0.8
     }
 
-    # Clock — large centre
+
+    # Clock
     label {
       monitor     =
       text        = $TIME
@@ -102,120 +144,63 @@ in
 
     # Password input
     input-field {
-      monitor          =
-      size             = 300, 45
+      monitor           =
+      size              = 300, 45
       outline_thickness = 2
-      dots_size        = 0.25
-      dots_spacing     = 0.2
-      dots_center      = true
-      outer_color      = ${border}
-      inner_color      = ${bg}
-      font_color       = ${fg}
-      fade_on_empty    = false
-      placeholder_text =
-      hide_input       = false
-      rounding         = 0
-      check_color      = ${green}
-      fail_color       = ${red}
-      fail_text        = $FAIL
-      capslock_color   = ${accent}
-      position         = 0, 20
-      halign           = center
-      valign           = center
+      dots_size         = 0.25
+      dots_spacing      = 0.2
+      dots_center       = true
+      outer_color       = ${border}
+      inner_color       = ${bg}
+      font_color        = ${fg}
+      fade_on_empty     = false
+      placeholder_text  =
+      hide_input        = false
+      rounding          = 0
+      check_color       = ${green}
+      fail_color        = ${red}
+      fail_text         = $FAIL
+      capslock_color    = ${accent}
+      position          = 0, 20
+      halign            = center
+      valign            = center
     }
 
-    # ── Left side — Hyprland keybindings ──────────────────────────────────
+    # ── Left — keybindings (top-left, grows downward) ─────────────────────
+    ${mkSection "── KEYBINDINGS ─────────────────────" [
+        "SUPER + Return       Terminal"
+        "SUPER + B            Browser"
+        "SUPER + E            Files (Yazi)"
+        "SUPER + Space        Launcher"
+        "SUPER + O            Notes"
+        "SUPER + Q            Kill"
+        "SUPER + F            Fullscreen"
+        "SUPER + V            Float/tile"
+        "SUPER + L            Lock"
+        "SUPER + 1-5          Workspace"
+        "SUPER + N            Blue light"
+        "SUPER + M            Battery"
+        "SUPER + Shift + S    Screenshot"
+        "SUPER + Shift + E    Exit"
+      ] 60 (-80) "left"}
 
-    label {
-      monitor     =
-      text        = ┌─ HYPRLAND KEYBINDINGS ─┐
-      color       = ${accent}
-      font_size   = 14
-      font_family = ${theme.fonts.mono}
-      position    = 60, 350
-      halign      = left
-      valign      = center
-    }
+    # ── Right — ASCII/hex (top-right, grows downward) ─────────────────────
+    ${mkSection "── ASCII / HEX ──" [
+        "32  0x20  SPC"
+        "48  0x30  0"
+        "65  0x41  A"
+        "97  0x61  a"
+        "10  0x0A  LF"
+        "13  0x0D  CR"
+        "27  0x1B  ESC"
+        " 9  0x09  TAB"
+      ] (-60) (-80) "right"}
 
-    label { monitor=; text = "SUPER + Return    Terminal";    color=${dim}; font_size=12; font_family=${theme.fonts.mono}; position=60,310; halign=left; valign=center; }
-    label { monitor=; text = "SUPER + B         Browser";     color=${dim}; font_size=12; font_family=${theme.fonts.mono}; position=60,285; halign=left; valign=center; }
-    label { monitor=; text = "SUPER + E         Files";       color=${dim}; font_size=12; font_family=${theme.fonts.mono}; position=60,260; halign=left; valign=center; }
-    label { monitor=; text = "SUPER + Space     Launcher";    color=${dim}; font_size=12; font_family=${theme.fonts.mono}; position=60,235; halign=left; valign=center; }
-    label { monitor=; text = "SUPER + Q         Kill";        color=${dim}; font_size=12; font_family=${theme.fonts.mono}; position=60,210; halign=left; valign=center; }
-    label { monitor=; text = "SUPER + F         Fullscreen";  color=${dim}; font_size=12; font_family=${theme.fonts.mono}; position=60,185; halign=left; valign=center; }
-    label { monitor=; text = "SUPER + 1-5       Workspace";   color=${dim}; font_size=12; font_family=${theme.fonts.mono}; position=60,160; halign=left; valign=center; }
-    label { monitor=; text = "SUPER + L         Lock";        color=${dim}; font_size=12; font_family=${theme.fonts.mono}; position=60,135; halign=left; valign=center; }
-    label { monitor=; text = "SUPER + N         Blue Light";  color=${dim}; font_size=12; font_family=${theme.fonts.mono}; position=60,110; halign=left; valign=center; }
-    label { monitor=; text = "SUPER + M         Battery Mode";color=${dim}; font_size=12; font_family=${theme.fonts.mono}; position=60,85;  halign=left; valign=center; }
-    label { monitor=; text = "Print             Screenshot";  color=${dim}; font_size=12; font_family=${theme.fonts.mono}; position=60,60;  halign=left; valign=center; }
-
-    # ── Right side — reference table ──────────────────────────────────────
-
-    label {
-      monitor     =
-      text        = ┌─ POWERS OF 2 ─┐
-      color       = ${accent}
-      font_size   = 14
-      font_family = ${theme.fonts.mono}
-      position    = -60, 350
-      halign      = right
-      valign      = center
-    }
-
-    label { monitor=; text="2⁰=1    2⁴=16    2⁸=256";   color=${dim}; font_size=11; font_family=${theme.fonts.mono}; position=-60,310; halign=right; valign=center; }
-    label { monitor=; text="2¹=2    2⁵=32    2⁹=512";   color=${dim}; font_size=11; font_family=${theme.fonts.mono}; position=-60,285; halign=right; valign=center; }
-    label { monitor=; text="2²=4    2⁶=64    2¹⁰=1024"; color=${dim}; font_size=11; font_family=${theme.fonts.mono}; position=-60,260; halign=right; valign=center; }
-    label { monitor=; text="2³=8    2⁷=128   2¹⁶=65536";color=${dim}; font_size=11; font_family=${theme.fonts.mono}; position=-60,235; halign=right; valign=center; }
-
-    label {
-      monitor     =
-      text        = ┌─ ASCII / HEX ─┐
-      color       = ${accent}
-      font_size   = 14
-      font_family = ${theme.fonts.mono}
-      position    = -60, 190
-      halign      = right
-      valign      = center
-    }
-
-    label { monitor=; text="32=0x20=SPC  65=0x41=A"; color=${dim}; font_size=11; font_family=${theme.fonts.mono}; position=-60,160; halign=right; valign=center; }
-    label { monitor=; text="48=0x30=0    97=0x61=a"; color=${dim}; font_size=11; font_family=${theme.fonts.mono}; position=-60,135; halign=right; valign=center; }
-    label { monitor=; text="10=0x0A=LF   13=0x0D=CR";color=${dim}; font_size=11; font_family=${theme.fonts.mono}; position=-60,110; halign=right; valign=center; }
-    label { monitor=; text="27=0x1B=ESC   9=0x09=TAB";color=${dim}; font_size=11; font_family=${theme.fonts.mono}; position=-60,85;  halign=right; valign=center; }
-
-    # ── Bottom — HTTP codes + signals ─────────────────────────────────────
-
-    label {
-      monitor     =
-      text        = HTTP: 200 OK │ 301 Redirect │ 400 Bad Request │ 401 Unauthorized │ 403 Forbidden │ 404 Not Found │ 500 Error
-      color       = ${muted}
-      font_size   = 10
-      font_family = ${theme.fonts.mono}
-      position    = 0, -280
-      halign      = center
-      valign      = center
-    }
-
-    label {
-      monitor     =
-      text        = SIGNALS: SIGHUP(1) │ SIGINT(2) │ SIGQUIT(3) │ SIGKILL(9) │ SIGTERM(15) │ SIGSTOP(19) │ SIGCONT(18)
-      color       = ${muted}
-      font_size   = 10
-      font_family = ${theme.fonts.mono}
-      position    = 0, -305
-      halign      = center
-      valign      = center
-    }
-
-    label {
-      monitor     =
-      text        = CHMOD: 755 rwxr-xr-x │ 644 rw-r--r-- │ 600 rw------- │ 777 rwxrwxrwx │ 400 r--------
-      color       = ${muted}
-      font_size   = 10
-      font_family = ${theme.fonts.mono}
-      position    = 0, -330
-      halign      = center
-      valign      = center
-    }
+    # ── Bottom bar ────────────────────────────────────────────────────────
+    ${mkLabel [
+        "HTTP:    200 OK   301 Redirect   400 Bad Request   401 Unauth   403 Forbidden   404 Not Found   500 Error"
+        "SIGNALS: SIGHUP 1   SIGINT 2   SIGQUIT 3   SIGKILL 9   SIGTERM 15   SIGSTOP 19   SIGCONT 18"
+        "CHMOD:   755 rwxr-xr-x   644 rw-r--r--   600 rw-------   777 rwxrwxrwx   400 r--------"
+      ] dim 10 0 20 "center" "bottom"}
   '';
 }
