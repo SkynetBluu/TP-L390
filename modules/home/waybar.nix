@@ -58,7 +58,7 @@
           separate-outputs = true;
           rewrite = {
             "(.*) - Brave" = "$1";
-            "(.*) - Alacritty" = "$1";
+            "(.*) - Ghostty" = "$1";
           };
         };
 
@@ -76,14 +76,14 @@
           format = "󰻠 {usage}%";
           interval = 5;
           tooltip = true;
-          on-click = "alacritty -e btop";
+          on-click = "ghostty -e btop";
         };
 
         memory = {
           format = "󰍛 {percentage}%";
           interval = 10;
           tooltip-format = "RAM: {used:0.1f}GB / {total:0.1f}GB";
-          on-click = "alacritty -e btop";
+          on-click = "ghostty -e btop";
         };
 
         temperature = {
@@ -119,7 +119,7 @@
           format-disconnected = "󰤭";
           tooltip-format-wifi = "󰤨 {essid}\nIP: {ipaddr}\nStrength: {signalStrength}%\n⇣ {bandwidthDownBytes}  ⇡ {bandwidthUpBytes}";
           tooltip-format-ethernet = "󰈀 {ifname}\nIP: {ipaddr}";
-          on-click = "alacritty -e nmtui";
+          on-click = "ghostty -e nmtui";
           interval = 10;
         };
 

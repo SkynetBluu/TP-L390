@@ -24,6 +24,8 @@
     ./waybar.nix
     ./rofi.nix
     ./mpv.nix
+    ./yazi.nix
+    ./ghostty.nix
   ];
 
   # ── Packages ──────────────────────────────────────────────────────────────
@@ -154,11 +156,17 @@
   # ── Hyprland (home config) ────────────────────────────────────────────────
 
   wayland.windowManager.hyprland = {
+
     enable = true;
     package = inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.hyprland;
     xwayland.enable = true;
 
+    plugins = [
+      inputs.hy3.packages.${pkgs.stdenv.hostPlatform.system}.hy3
+    ];
+
     settings = {
+
       monitor = "eDP-1,1920x1080@60,0x0,1";
 
       general = {
@@ -167,7 +175,7 @@
         border_size = 2;
         "col.active_border" = "rgba(89b4faee) rgba(cba6f7ee) 45deg";
         "col.inactive_border" = "rgba(45475aaa)";
-        layout = "dwindle";
+        layout = "hy3";
       };
 
       decoration = {
@@ -200,8 +208,6 @@
         };
       };
 
-      dwindle = { preserve_split = true; };
-
       misc = { force_default_wallpaper = 0; disable_hyprland_logo = true; };
 
       exec-once = [
@@ -221,15 +227,15 @@
       "$mod" = "SUPER";
 
       bind = [
-        "$mod, Return,      exec, alacritty"
+        "$mod, Return,      exec, ghostty"
         "$mod, B,           exec, brave"
-        "$mod, E,           exec, alacritty -e yazi"
+        "$mod, E,           exec, ghostty -e yazi"
         "$mod, Space,       exec, rofi -show drun"
         "$mod, O,           exec, quick-notes"
         "$mod SHIFT, S,     exec, grim -g \"$(slurp)\" - | wl-copy"
-        "$mod, Q,           killactive"
+        "$mod, Q,           hy3:killactive"
         "$mod, F,           fullscreen"
-        "$mod, V,           togglefloating"
+        "$mod, G,           togglefloating"
         "$mod, L,           exec, loginctl lock-session"
         "$mod, N,           exec, bluelight-toggle"
         "$mod SHIFT, N,     exec, bluelight-off"
@@ -240,28 +246,51 @@
         "$mod, F2,          exec, wifi-manage reconnect"
         "$mod SHIFT, F2,    exec, wifi-manage scan"
         "$mod CTRL, F2,     exec, wifi-manage toggle"
-        "$mod, left,        movefocus, l"
-        "$mod, right,       movefocus, r"
-        "$mod, up,          movefocus, u"
-        "$mod, down,        movefocus, d"
+
+        # move focus
+        "$mod, left,  hy3:movefocus, l"
+        "$mod, right, hy3:movefocus, r"
+        "$mod, up,    hy3:movefocus, u"
+        "$mod, down,  hy3:movefocus, d"
+
+        # move window
+        "$mod SHIFT, left,  hy3:movewindow, l"
+        "$mod SHIFT, right, hy3:movewindow, r"
+        "$mod SHIFT, up,    hy3:movewindow, u"
+        "$mod SHIFT, down,  hy3:movewindow, d"
+
+        # move to workspace
+        "$mod SHIFT, 1, hy3:movetoworkspace, 1"
+        "$mod SHIFT, 2, hy3:movetoworkspace, 2"
+        "$mod SHIFT, 3, hy3:movetoworkspace, 3"
+        "$mod SHIFT, 4, hy3:movetoworkspace, 4"
+        "$mod SHIFT, 5, hy3:movetoworkspace, 5"
+
+        # Resize window with keys
+        "$mod CTRL, left,  resizeactive, -50 0"
+        "$mod CTRL, right, resizeactive, 50 0"
+        "$mod CTRL, up,    resizeactive, 0 -50"
+        "$mod CTRL, down,  resizeactive, 0 50"
+
+        # create splits
+        "$mod, h,   hy3:makegroup, h" # horizontal split
+        "$mod, v,   hy3:makegroup, v" # vertical split
+        "$mod, r,   hy3:changegroup, opposite" # toggle split direction
+
         "$mod, 1,           workspace, 1"
         "$mod, 2,           workspace, 2"
         "$mod, 3,           workspace, 3"
         "$mod, 4,           workspace, 4"
         "$mod, 5,           workspace, 5"
-        "$mod SHIFT, 1,     movetoworkspace, 1"
-        "$mod SHIFT, 2,     movetoworkspace, 2"
-        "$mod SHIFT, 3,     movetoworkspace, 3"
-        "$mod SHIFT, 4,     movetoworkspace, 4"
-        "$mod SHIFT, 5,     movetoworkspace, 5"
+
         "$mod, mouse_down,  workspace, e+1"
         "$mod, mouse_up,    workspace, e-1"
         "$mod SHIFT, E,     exec, hyprctl dispatch exit"
       ];
 
       bindm = [
-        "$mod, mouse:272, movewindow"
-        "$mod, mouse:273, resizewindow"
+        "$mod, mouse:272, resizewindow"
+        "$mod, mouse:273, movewindow"
       ];
 
       bindel = [
@@ -294,10 +323,31 @@
 
   xdg = {
     enable = true;
+
+    mimeApps = {
+      enable = true;
+      defaultApplications = {
+        "video/mp4" = "mpv.desktop";
+        "video/x-matroska" = "mpv.desktop";
+        "video/webm" = "mpv.desktop";
+        "audio/mpeg" = "mpv.desktop";
+        "audio/flac" = "mpv.desktop";
+        "audio/ogg" = "mpv.desktop";
+        "text/plain" = "nvim.desktop";
+        "application/pdf" = "brave-browser.desktop";
+        "image/png" = "imv.desktop";
+        "image/jpeg" = "imv.desktop";
+        "image/webp" = "imv.desktop";
+        "image/gif" = "imv.desktop";
+        "x-scheme-handler/http" = "brave-browser.desktop";
+        "x-scheme-handler/https" = "brave-browser.desktop";
+      };
+    };
+
     userDirs = {
       enable = true;
       createDirectories = true;
-      setSessionVariables = true; # silence stateVersion warning
+      setSessionVariables = true;
       desktop = "${config.home.homeDirectory}/Desktop";
       documents = "${config.home.homeDirectory}/Documents";
       download = "${config.home.homeDirectory}/Downloads";

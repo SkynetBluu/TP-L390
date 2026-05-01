@@ -4,7 +4,7 @@
 { pkgs, ... }:
 
 let
-  # Brave with Wayland flags
+  # ── Brave (main profile) ──────────────────────────────────────────────────
   brave-wayland = pkgs.brave.override {
     commandLineArgs = [
       "--ozone-platform=wayland"
@@ -34,8 +34,6 @@ let
     ignore nou2f
   '';
 
-  # Custom wrapper: conditionally joins existing sandbox or creates new one
-  # (avoids --profile conflicts when Brave is already running)
   brave-wrapper = pkgs.writeShellScriptBin "brave" ''
     FIREJAIL=/run/wrappers/bin/firejail
     BRAVE=${brave-wayland}/bin/brave
@@ -48,9 +46,21 @@ let
     fi
   '';
 
-  # Claude Code wrapper — sandboxed with Firejail
-  # Only whitelists ~/projects, ~/.config/claude and ~/.local/share/claude
-  # Adjust ~/projects to wherever you keep your code
+  brave-hw-wrapper = pkgs.writeShellScriptBin "brave-hw" ''
+    FIREJAIL=/run/wrappers/bin/firejail
+    BRAVE=${brave-wayland}/bin/brave
+    SYSTEMD_RUN="${pkgs.systemd}/bin/systemd-run --user --quiet --scope --slice=app-brave.slice"
+    USER_DATA_DIR="$HOME/.config/brave-hw"
+    mkdir -p "$USER_DATA_DIR"
+
+    if "$FIREJAIL" --list 2>/dev/null | ${pkgs.gnugrep}/bin/grep -q ":brave-hw:"; then
+      exec $SYSTEMD_RUN "$FIREJAIL" --join=brave-hw "$BRAVE" --user-data-dir="$USER_DATA_DIR" "$@"
+    else
+      exec $SYSTEMD_RUN "$FIREJAIL" --name=brave-hw --profile=${brave-hw-profile} "$BRAVE" --user-data-dir="$USER_DATA_DIR" "$@"
+    fi
+  '';
+
+  # ── Claude Code ───────────────────────────────────────────────────────────
   claude-wrapper = pkgs.writeShellScriptBin "claude" ''
     FIREJAIL=/run/wrappers/bin/firejail
     CLAUDE=${pkgs.claude-code}/bin/claude
@@ -76,39 +86,36 @@ let
       "$CLAUDE" "$@"
   '';
 
-  brave-hw-wrapper = pkgs.writeShellScriptBin "brave-hw" ''
-    FIREJAIL=/run/wrappers/bin/firejail
-    BRAVE=${brave-wayland}/bin/brave
-    SYSTEMD_RUN="${pkgs.systemd}/bin/systemd-run --user --quiet --scope --slice=app-brave.slice"
-    USER_DATA_DIR="$HOME/.config/brave-hw"
-    mkdir -p "$USER_DATA_DIR"
-
-    if "$FIREJAIL" --list 2>/dev/null | ${pkgs.gnugrep}/bin/grep -q ":brave-hw:"; then
-      exec $SYSTEMD_RUN "$FIREJAIL" --join=brave-hw "$BRAVE" --user-data-dir="$USER_DATA_DIR" "$@"
-    else
-      exec $SYSTEMD_RUN "$FIREJAIL" --name=brave-hw --profile=${brave-hw-profile} "$BRAVE" --user-data-dir="$USER_DATA_DIR" "$@"
-    fi
-  '';
 in
 {
   # ── Firejail ──────────────────────────────────────────────────────────────
   programs.firejail = {
     enable = true;
-    # NOTE: brave uses the custom wrapper above, not wrappedBinaries
+
+    wrappedBinaries = {
+      # mpv — uses the upstream built-in profile which already handles
+      # yt-dlp, Lua scripts, ~/Videos, ~/Music, ~/Pictures, ~/Downloads
+      mpv = {
+        executable = "${pkgs.mpv}/bin/mpv";
+        profile = "${pkgs.firejail}/etc/firejail/mpv.profile";
+      };
+    };
   };
+
+  # Brave and Claude use custom shell wrappers (not wrappedBinaries) because
+  # they need sandbox join logic and systemd scope management that the simple
+  # wrappedBinaries pattern can't express.
 
   # ── AppArmor ──────────────────────────────────────────────────────────────
   security.apparmor.enable = true;
 
   # ── Polkit ────────────────────────────────────────────────────────────────
   security.polkit.enable = true;
-
   security.polkit.adminIdentities = [ "unix-user:nimbus" ];
 
   # ── Sudo ──────────────────────────────────────────────────────────────────
   security.sudo.wheelNeedsPassword = true;
 
-  # Passwordless TLP battery threshold management only
   security.sudo.extraRules = [
     {
       users = [ "nimbus" ];
@@ -123,13 +130,12 @@ in
 
   # ── PAM ───────────────────────────────────────────────────────────────────
   security.pam.services = {
-    login.enableGnomeKeyring  = true;
+    login.enableGnomeKeyring = true;
     passwd.enableGnomeKeyring = true;
-    hyprlock                  = {};
+    hyprlock = { };
   };
 
   # ── GNOME Keyring ─────────────────────────────────────────────────────────
-  # Secret Service provider for VS Code / Electron credential storage
   services.gnome.gnome-keyring.enable = true;
 
   # ── Packages ──────────────────────────────────────────────────────────────
@@ -137,6 +143,6 @@ in
     brave-wrapper
     brave-hw-wrapper
     claude-wrapper
-    pkgs.libsecret # secret-tool for debugging GNOME Keyring
+    pkgs.libsecret
   ];
 }

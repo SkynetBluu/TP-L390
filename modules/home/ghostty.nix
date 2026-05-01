@@ -52,6 +52,7 @@
     # ── Clipboard ─────────────────────────────────────────────────────────────
     clipboard-read = allow
     clipboard-write = allow
+    copy-on-select = clipboard
 
     # ── Graphics ──────────────────────────────────────────────────────────────
     # Sixel support for inline image previews in yazi

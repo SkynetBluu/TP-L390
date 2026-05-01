@@ -19,7 +19,11 @@
     };
 
     # Hyprland — official flake for latest stable
-    hyprland.url = "github:hyprwm/Hyprland";
+    hyprland.url = "github:hyprwm/Hyprland?ref=v0.54.2";
+    hy3 = {
+      url = "github:outfoxxed/hy3?ref=hl0.54.2.1";
+      inputs.hyprland.follows = "hyprland";
+    };
 
     # Encrypted secrets management
     sops-nix = {
@@ -28,7 +32,7 @@
     };
   };
 
-  outputs = { self, nixpkgs, home-manager, nixos-hardware, disko, hyprland, sops-nix, ... } @ inputs:
+  outputs = { self, nixpkgs, home-manager, nixos-hardware, disko, hyprland, hy3, sops-nix, ... } @ inputs:
     let
       system = "x86_64-linux";
 
@@ -87,11 +91,14 @@
           # Home Manager as a NixOS module
           home-manager.nixosModules.home-manager
           {
-            home-manager.useGlobalPkgs      = true;
-            home-manager.useUserPackages    = true;
-            home-manager.extraSpecialArgs   = specialArgs // { theme = import ./modules/home/theme.nix; };
+            home-manager.useGlobalPkgs = true;
+            home-manager.useUserPackages = true;
+            home-manager.extraSpecialArgs = specialArgs // {
+              theme = import ./modules/home/theme.nix;
+              inherit inputs;
+            };
             home-manager.backupFileExtension = "backup";
-            home-manager.users.nimbus       = import ./modules/home/home.nix;
+            home-manager.users.nimbus = import ./modules/home/home.nix;
           }
         ];
       };

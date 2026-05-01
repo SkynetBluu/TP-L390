@@ -234,34 +234,34 @@ let
     # Quick Note - $(date '+%Y-%m-%d %H:%M')
     ---
     TEMPLATE
-    alacritty --class="quick-notes" -e nvim "+normal G" "$NOTE_FILE"
+    ghostty --class="quick-notes" -e nvim "+normal G" "$NOTE_FILE"
   '';
 
   # ── System info ──────────────────────────────────────────────────────────
 
   # ── System info ──────────────────────────────────────────────────────────
   sysinfo-panel = pkgs.writeShellScriptBin "sysinfo-panel" ''
-            set -euo pipefail
-            HOSTNAME=$(hostname)
-            KERNEL=$(uname -r)
-            UPTIME=$(uptime -p | sed 's/up //')
-            CPU_MODEL=$(${pkgs.gawk}/bin/awk -F': ' '/model name/{print $2; exit}' /proc/cpuinfo)
-            CPU_TEMP=$(cat /sys/class/hwmon/hwmon6/temp1_input 2>/dev/null | ${pkgs.gawk}/bin/awk '{printf "%.1f°C", $1/1000}' || echo "N/A")
-            MEM_INFO=$(free -h | ${pkgs.gawk}/bin/awk '/^Mem:/{print $3 "/" $2}')
-            MEM_PERCENT=$(free | ${pkgs.gawk}/bin/awk '/^Mem:/{printf "%.0f", $3/$2*100}')
-            DISK_INFO=$(df -h / | ${pkgs.gawk}/bin/awk 'NR==2{print $3 "/" $2 " (" $5 ")"}')
-            if [ -f /sys/class/power_supply/BAT0/capacity ]; then
-              BAT_CAP=$(cat /sys/class/power_supply/BAT0/capacity)
-              BAT_STATUS=$(cat /sys/class/power_supply/BAT0/status)
-              BATTERY="$BAT_CAP% ($BAT_STATUS)"
-            else
-              BATTERY="N/A"
-            fi
-            NET_IFACE=$(${pkgs.iproute2}/bin/ip route | ${pkgs.gawk}/bin/awk '/default/{print $5; exit}')
-            NET_IP=$(${pkgs.iproute2}/bin/ip -4 addr show "$NET_IFACE" 2>/dev/null | ${pkgs.gawk}/bin/awk '/inet /{print $2}' | cut -d'/' -f1)
-            GPU_USAGE="N/A"
-            BLUELIGHT_STATE=$(cat "$HOME/.config/bluelight-state" 2>/dev/null || echo "off")
-            [ "$BLUELIGHT_STATE" = "off" ] && BLUELIGHT="Off" || BLUELIGHT="$BLUELIGHT_STATE K"
+    set -euo pipefail
+    HOSTNAME=$(hostname)
+    KERNEL=$(uname -r)
+    UPTIME=$(uptime -p | sed 's/up //')
+    CPU_MODEL=$(${pkgs.gawk}/bin/awk -F': ' '/model name/{print $2; exit}' /proc/cpuinfo)
+    CPU_TEMP=$(cat /sys/class/hwmon/hwmon6/temp1_input 2>/dev/null | ${pkgs.gawk}/bin/awk '{printf "%.1f°C", $1/1000}' || echo "N/A")
+    MEM_INFO=$(free -h | ${pkgs.gawk}/bin/awk '/^Mem:/{print $3 "/" $2}')
+    MEM_PERCENT=$(free | ${pkgs.gawk}/bin/awk '/^Mem:/{printf "%.0f", $3/$2*100}')
+    DISK_INFO=$(df -h / | ${pkgs.gawk}/bin/awk 'NR==2{print $3 "/" $2 " (" $5 ")"}')
+    if [ -f /sys/class/power_supply/BAT0/capacity ]; then
+      BAT_CAP=$(cat /sys/class/power_supply/BAT0/capacity)
+      BAT_STATUS=$(cat /sys/class/power_supply/BAT0/status)
+      BATTERY="$BAT_CAP% ($BAT_STATUS)"
+    else
+      BATTERY="N/A"
+    fi
+    NET_IFACE=$(${pkgs.iproute2}/bin/ip route | ${pkgs.gawk}/bin/awk '/default/{print $5; exit}')
+    NET_IP=$(${pkgs.iproute2}/bin/ip -4 addr show "$NET_IFACE" 2>/dev/null | ${pkgs.gawk}/bin/awk '/inet /{print $2}' | cut -d'/' -f1)
+    GPU_USAGE="N/A"
+    BLUELIGHT_STATE=$(cat "$HOME/.config/bluelight-state" 2>/dev/null || echo "off")
+    [ "$BLUELIGHT_STATE" = "off" ] && BLUELIGHT="Off" || BLUELIGHT="$BLUELIGHT_STATE K"
 
     TMPFILE="/tmp/sysinfo-panel-rows"
         cat > "$TMPFILE" << EOF
@@ -277,15 +277,16 @@ let
     󰖩   Network     $NET_IP ($NET_IFACE)
     󰖨   Filter      $BLUELIGHT
     EOF
-        ${pkgs.rofi}/bin/rofi \
-          -dmenu \
-          -p "󰋊 System" \
-          -input "$TMPFILE" \
-          -theme-str 'window {width: 680px;}' \
-          -theme-str 'listview {lines: 11; scrollbar: false; fixed-height: true;}' \
-          -theme-str 'entry {enabled: false;}' \
-          -theme-str 'textbox-prompt-colon {enabled: false;}' \
-          || true
+    
+    ${pkgs.rofi}/bin/rofi \
+      -dmenu \
+      -p "󰋊 System" \
+      -input "$TMPFILE" \
+      -theme-str 'window {width: 680px;}' \
+      -theme-str 'listview {lines: 11; scrollbar: false; fixed-height: true;}' \
+      -theme-str 'entry {enabled: false;}' \
+      -theme-str 'textbox-prompt-colon {enabled: false;}' \
+      || true
 
   '';
 

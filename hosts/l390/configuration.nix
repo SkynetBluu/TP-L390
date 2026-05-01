@@ -111,9 +111,6 @@
     # Terminal
     alacritty
 
-    # Browser — Wayland-optimised, Firejail-wrapped in security.nix
-    brave
-
     # Editors
     vscode
     neovim
@@ -141,10 +138,8 @@
     hypridle
     hyprlock
     yt-dlp
-    mpv
     yewtube
     nh
-    yazi
   ];
 
   # ── Services ──────────────────────────────────────────────────────────────
