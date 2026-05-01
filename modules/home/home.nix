@@ -80,6 +80,7 @@
         opacity = 0.95;
         startup_mode = "Windowed";
       };
+      selection.save_to_clipboard = true;
       scrolling.history = 10000;
       font = {
         normal = { family = theme.fonts.mono; style = "Regular"; };
