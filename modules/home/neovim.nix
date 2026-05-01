@@ -238,12 +238,26 @@
         format_on_save = { timeout_ms = 800, lsp_format = "fallback" },
       })
 
-      -- Treesitter
-      require("nvim-treesitter.configs").setup({
-        highlight = { enable = true },
-        indent    = { enable = true },
-      })
-      require("treesitter-context").setup({ enable = true, max_lines = 3 })
+      -- Treesitter — on NixOS withAllGrammars handles parser setup
+      -- We just enable highlight/indent via the configs module if available
+      local ts_ok, ts_configs = pcall(require, "nvim-treesitter.configs")
+      if ts_ok then
+        ts_configs.setup({
+          highlight = { enable = true },
+          indent    = { enable = true },
+        })
+      else
+        -- Fallback: enable treesitter highlight natively (nvim 0.9+)
+        vim.api.nvim_create_autocmd("FileType", {
+          callback = function()
+            pcall(vim.treesitter.start)
+          end,
+        })
+      end
+      local ctx_ok, ts_context = pcall(require, "treesitter-context")
+      if ctx_ok then
+        ts_context.setup({ enable = true, max_lines = 3 })
+      end
 
       -- Git
       require("gitsigns").setup({
