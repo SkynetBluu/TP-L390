@@ -30,31 +30,36 @@ let
       exit 1
     fi
 
-    # Format results for fzf
+    # Save to temp file so fzf preview subshell can access it
+    RESULTS_FILE=$(mktemp /tmp/yts-XXXX.json)
+    echo "$RESULTS" > "$RESULTS_FILE"
+    trap "rm -f $RESULTS_FILE" EXIT
+
+    # Format results for fzf (id TAB display)
     FORMATTED=$(echo "$RESULTS" | ${pkgs.jq}/bin/jq -r \
       '"\(.id)\t\(.title) [\(.duration_string // "?")]  \(.channel // "Unknown")"')
 
-    # Pick with fzf
+    # Pick with fzf — preview reads from temp file
     SELECTED=$(echo "$FORMATTED" | \
       ${pkgs.fzf}/bin/fzf \
         --delimiter='\t' \
         --with-nth=2 \
         --prompt="▶ " \
         --header="YouTube Search: $QUERY  (Enter to play, Ctrl+C to cancel)" \
-        --preview='
-          ID=$(echo {} | cut -f1)
-          INFO=$(echo "$RESULTS" | ${pkgs.jq}/bin/jq -r --arg id "$ID" \
-            ".[] | select(.id == \$id) | 
-             \"Title:    \" + .title + \"\n\" +
-             \"Channel:  \" + (.channel // \"Unknown\") + \"\n\" +
-             \"Duration: \" + (.duration_string // \"?\") + \"\n\" +
-             \"Views:    \" + ((.view_count // 0) | tostring) + \"\n\" +
-             \"Upload:   \" + (.upload_date // \"?\") + \"\n\n\" +
-             (.description // \"No description\" | .[0:300])")
-          echo "$INFO"
-        ' \
-        --preview-window=right:40%:wrap \
-        --height=80%) || exit 0
+        --preview="${pkgs.bash}/bin/bash -c '
+          ID=\$(echo {} | cut -f1)
+          ${pkgs.jq}/bin/jq -r --arg id \"\$ID\" \"
+            .[] | select(.id == \\\$id) |
+            \\\"Title:    \\\" + .title + \\\"\n\\\" +
+            \\\"Channel:  \\\" + (.channel // \\\"Unknown\\\") + \\\"\n\\\" +
+            \\\"Duration: \\\" + (.duration_string // \\\"?\\\") + \\\"\n\\\" +
+            \\\"Views:    \\\" + ((.view_count // 0) | tostring) + \\\"\n\\\" +
+            \\\"Upload:   \\\" + (.upload_date // \\\"?\\\") + \\\"\n\n\\\" +
+            (.description // \\\"No description\\\" | .[0:400])
+          \" ${pkgs.jq}/bin/jq -r --arg id \"\$ID\" . $RESULTS_FILE
+        '" \
+        --preview-window=right:45%:wrap \
+        --height=80%) || { rm -f "$RESULTS_FILE"; exit 0; }
 
     VIDEO_ID=$(echo "$SELECTED" | cut -f1)
     VIDEO_TITLE=$(echo "$SELECTED" | cut -f2)
@@ -328,15 +333,13 @@ in
   # ── Shell aliases ─────────────────────────────────────────────────────────
 
   programs.bash.shellAliases = {
-    yt      = "mpv";                                    # Play URL directly
-    yts     = "yt-search";                              # Search YouTube
+    yts     = "yt-search";                              # Search YouTube with fzf
+    ytp     = "mpv";                                    # Play URL directly in mpv
     ytd     = "yt-download";                            # Download video
     ytmp3   = "yt-download '' audio";                  # Download audio
     ytq     = "yt-queue";                               # Queue manager
     ytc     = "yt-clip";                                # Play clip
-    # Play with audio-only profile
-    ytmusic = "mpv --profile=audio-only";
-    # Play in background (audio)
-    ytbg    = "mpv --profile=audio-only --no-video &";
+    ytmusic = "mpv --profile=audio-only";              # Audio-only playback
+    ytbg    = "mpv --profile=audio-only --no-video &"; # Play audio in background
   };
 }
