@@ -40,9 +40,21 @@ let
         --delimiter='\t' \
         --with-nth=2 \
         --prompt="▶ " \
-        --header="YouTube Search: $QUERY" \
-        --preview='echo "Loading preview..."' \
-        --height=40%) || exit 0
+        --header="YouTube Search: $QUERY  (Enter to play, Ctrl+C to cancel)" \
+        --preview='
+          ID=$(echo {} | cut -f1)
+          INFO=$(echo "$RESULTS" | ${pkgs.jq}/bin/jq -r --arg id "$ID" \
+            ".[] | select(.id == \$id) | 
+             \"Title:    \" + .title + \"\n\" +
+             \"Channel:  \" + (.channel // \"Unknown\") + \"\n\" +
+             \"Duration: \" + (.duration_string // \"?\") + \"\n\" +
+             \"Views:    \" + ((.view_count // 0) | tostring) + \"\n\" +
+             \"Upload:   \" + (.upload_date // \"?\") + \"\n\n\" +
+             (.description // \"No description\" | .[0:300])")
+          echo "$INFO"
+        ' \
+        --preview-window=right:40%:wrap \
+        --height=80%) || exit 0
 
     VIDEO_ID=$(echo "$SELECTED" | cut -f1)
     VIDEO_TITLE=$(echo "$SELECTED" | cut -f2)
@@ -188,111 +200,111 @@ in
 
     config = {
       # ── Video ──────────────────────────────────────────────────────────
-      profile = "gpu-hq";
-      vo = "gpu";
-      gpu-api = "opengl"; # Intel UHD 620 — opengl more stable than vulkan
-      hwdec = "vaapi"; # VA-API hardware decode
-      hwdec-codecs = "all";
+      profile          = "gpu-hq";
+      vo               = "gpu";
+      gpu-api          = "opengl";       # Intel UHD 620 — opengl more stable than vulkan
+      hwdec            = "vaapi";        # VA-API hardware decode
+      hwdec-codecs     = "all";
 
       # ── Audio ──────────────────────────────────────────────────────────
-      ao = "pipewire";
-      volume = 100;
-      volume-max = 150;
+      ao               = "pipewire";
+      volume           = 100;
+      volume-max       = 150;
 
       # ── Subtitles ──────────────────────────────────────────────────────
-      sub-auto = "fuzzy";
-      sub-font = "JetBrainsMono Nerd Font";
-      sub-font-size = 44;
-      sub-color = "#cdd6f4"; # Catppuccin foreground
-      sub-border-color = "#1e1e2e"; # Catppuccin background
-      sub-border-size = 2;
+      sub-auto         = "fuzzy";
+      sub-font         = "JetBrainsMono Nerd Font";
+      sub-font-size    = 44;
+      sub-color        = "#cdd6f4";      # Catppuccin foreground
+      sub-border-color = "#1e1e2e";      # Catppuccin background
+      sub-border-size  = 2;
       sub-shadow-offset = 1;
 
       # ── UI ─────────────────────────────────────────────────────────────
-      osc = true;
-      osd-font = "JetBrainsMono Nerd Font";
-      osd-font-size = 32;
-      osd-color = "#cdd6f4";
+      osc              = true;
+      osd-font         = "JetBrainsMono Nerd Font";
+      osd-font-size    = 32;
+      osd-color        = "#cdd6f4";
       osd-border-color = "#1e1e2e";
-      osd-bar-align-y = -1; # OSD bar at bottom
-      osd-bar-h = 2;
+      osd-bar-align-y  = -1;            # OSD bar at bottom
+      osd-bar-h        = 2;
 
       # ── Window ─────────────────────────────────────────────────────────
-      keep-open = true; # Don't close on end
-      autofit-larger = "90%x90%"; # Max window size
-      geometry = "50%+50%+50%"; # Centre on screen
+      keep-open        = true;           # Don't close on end
+      autofit-larger   = "90%x90%";     # Max window size
+      geometry         = "50%+50%+50%"; # Centre on screen
 
       # ── Screenshots ────────────────────────────────────────────────────
-      screenshot-format = "png";
+      screenshot-format    = "png";
       screenshot-directory = "~/Pictures/mpv";
-      screenshot-template = "%F-%P";
+      screenshot-template  = "%F-%P";
 
       # ── Cache ──────────────────────────────────────────────────────────
-      cache = true;
+      cache            = true;
       demuxer-max-bytes = "50MiB";
       demuxer-max-back-bytes = "25MiB";
 
       # ── YouTube / yt-dlp ───────────────────────────────────────────────
-      ytdl = true;
-      ytdl-format = "bestvideo[height<=1080]+bestaudio/best[height<=1080]";
+      ytdl             = true;
+      ytdl-format      = "bestvideo[height<=1080]+bestaudio/best[height<=1080]";
       ytdl-raw-options = "sub-langs=en,compat-options=no-youtube-channel-redirect";
     };
 
     # Key bindings
     bindings = {
       # Volume
-      "WHEEL_UP" = "add volume 2";
+      "WHEEL_UP"   = "add volume 2";
       "WHEEL_DOWN" = "add volume -2";
 
       # Speed
-      "[" = "add speed -0.25";
-      "]" = "add speed 0.25";
-      "{" = "add speed -0.5";
-      "}" = "add speed 0.5";
-      "BS" = "set speed 1.0";
+      "["          = "add speed -0.25";
+      "]"          = "add speed 0.25";
+      "{"          = "add speed -0.5";
+      "}"          = "add speed 0.5";
+      "BS"         = "set speed 1.0";
 
       # Seeking
-      "LEFT" = "seek -5";
-      "RIGHT" = "seek 5";
-      "UP" = "seek 60";
-      "DOWN" = "seek -60";
+      "LEFT"       = "seek -5";
+      "RIGHT"      = "seek 5";
+      "UP"         = "seek 60";
+      "DOWN"       = "seek -60";
       "Shift+LEFT" = "seek -1 exact";
       "Shift+RIGHT" = "seek 1 exact";
 
       # Chapters
-      "PGUP" = "add chapter -1";
-      "PGDWN" = "add chapter 1";
+      "PGUP"       = "add chapter -1";
+      "PGDWN"      = "add chapter 1";
 
       # Subtitles
-      "v" = "cycle sub-visibility";
-      "V" = "cycle sub";
+      "v"          = "cycle sub-visibility";
+      "V"          = "cycle sub";
 
       # Audio tracks
-      "a" = "cycle audio";
+      "a"          = "cycle audio";
 
       # Screenshot
-      "s" = "screenshot video";
-      "S" = "screenshot window";
+      "s"          = "screenshot video";
+      "S"          = "screenshot window";
 
       # Loop
-      "l" = "ab-loop";
-      "L" = "set loop-file inf";
+      "l"          = "ab-loop";
+      "L"          = "set loop-file inf";
 
       # Quality (for YouTube)
-      "q" = ''cycle-values ytdl-format "bestvideo[height<=480]+bestaudio" "bestvideo[height<=720]+bestaudio" "bestvideo[height<=1080]+bestaudio"'';
+      "q"          = ''cycle-values ytdl-format "bestvideo[height<=480]+bestaudio" "bestvideo[height<=720]+bestaudio" "bestvideo[height<=1080]+bestaudio"'';
     };
 
     profiles = {
       # Fast profile for slow connections
       "fast" = {
         ytdl-format = "bestvideo[height<=480]+bestaudio/best[height<=480]";
-        hwdec = "vaapi";
+        hwdec       = "vaapi";
       };
       # Audio-only profile
       "audio-only" = {
-        video = "no";
-        ytdl-format = "bestaudio/best";
-        ao = "pipewire";
+        video        = "no";
+        ytdl-format  = "bestaudio/best";
+        ao           = "pipewire";
       };
       # Full HD
       "hd" = {
@@ -316,15 +328,15 @@ in
   # ── Shell aliases ─────────────────────────────────────────────────────────
 
   programs.bash.shellAliases = {
-    ytp = "mpv"; # Play URL directly
-    yts = "yt-search"; # Search YouTube
-    ytd = "yt-download"; # Download video
-    ytmp3 = "yt-download '' audio"; # Download audio
-    ytq = "yt-queue"; # Queue manager
-    ytc = "yt-clip"; # Play clip
+    yt      = "mpv";                                    # Play URL directly
+    yts     = "yt-search";                              # Search YouTube
+    ytd     = "yt-download";                            # Download video
+    ytmp3   = "yt-download '' audio";                  # Download audio
+    ytq     = "yt-queue";                               # Queue manager
+    ytc     = "yt-clip";                                # Play clip
     # Play with audio-only profile
     ytmusic = "mpv --profile=audio-only";
     # Play in background (audio)
-    ytbg = "mpv --profile=audio-only --no-video &";
+    ytbg    = "mpv --profile=audio-only --no-video &";
   };
 }
