@@ -28,11 +28,15 @@
 - **Btrfs** with subvolumes (`@`, `@home`, `@nix`, `@snapshots`, `@log`) and zstd compression
 - **Hibernation** — swap encrypted with LUKS, resume device configured
 - **Hyprland** — Wayland compositor with UWSM, animations, gestures
-- **Catppuccin Mocha** — unified theme across all apps
+- **Catppuccin Mocha** — unified theme across all apps (Waybar, Rofi, Neovim, Alacritty, Yazi, Hyprlock)
 - **Firejail sandboxing** — Brave and Claude Code run in isolated sandboxes
 - **Home Manager** — fully declarative user environment
 - **TLP** — advanced laptop power management with ThinkPad charge thresholds
 - **PipeWire** — modern audio stack with SwayOSD OSD
+- **yt-dlp + mpv** — YouTube playback and download from the terminal
+- **Blue light filter** — hyprsunset with 8 levels, auto-enabled at 2500K
+- **Battery mode cycling** — conservation / balanced / full charge thresholds
+- **Performance mode daemon** — auto battery saver on unplug
 - **sops-nix** — encrypted secrets management (configured post-install)
 
 ---
@@ -60,7 +64,7 @@
 │   │   ├── mako.nix             # Notifications
 │   │   ├── swayosd.nix          # Volume/brightness OSD
 │   │   ├── gtk.nix              # GTK theming
-│   │   ├── desktop-entries.nix  # XDG desktop entries
+│   │   ├── mpv.nix              # mpv + yt-dlp + YouTube scripts
 │   │   └── scripts.nix          # Helper scripts
 │   └── system/                  # NixOS modules
 │       ├── boot.nix             # Bootloader, LUKS, kernel
@@ -195,10 +199,41 @@ sudo ssh-to-age -private-key -i /etc/ssh/ssh_host_ed25519_key
 ## Daily Commands
 
 ```bash
-rebuild   # sudo nixos-rebuild switch --flake ~/.config/nixos#l390
-update    # nix flake update ~/.config/nixos
-cleanup   # sudo nix-collect-garbage -d
+rebuild   # nh os switch ~/.config/nixos
+update    # nh os switch --update ~/.config/nixos
+cleanup   # nh clean all
 ```
+
+---
+
+## YouTube / Media
+
+mpv is configured with yt-dlp for seamless YouTube playback.
+
+| Command | What it does |
+|---------|-------------|
+| `yt` | Yewtube — full TUI YouTube browser |
+| `yts <query>` | Search YouTube with fzf, play in mpv |
+| `ytp <url>` | Play URL directly in mpv |
+| `ytd <url> [video\|audio\|best]` | Download video |
+| `ytmp3 <url>` | Download as MP3 to ~/Music |
+| `ytq add <url>` | Add to watch-later queue |
+| `ytq play` | Play the queue |
+| `ytc <url> <start> <end>` | Play a specific clip |
+| `ytmusic <url>` | Audio-only playback |
+| `ytbg <url>` | Play audio in background |
+
+**mpv key bindings:**
+
+| Key | Action |
+|-----|--------|
+| `[` / `]` | Speed -0.25 / +0.25 |
+| `BS` | Reset speed to 1.0 |
+| `l` | A-B loop |
+| `s` | Screenshot |
+| `v` | Toggle subtitles |
+| `a` | Cycle audio tracks |
+| `Shift+Left/Right` | Seek ±1 second |
 
 ---
 
