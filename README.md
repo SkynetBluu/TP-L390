@@ -1,10 +1,10 @@
 # TP-L390 — NixOS Configuration
 
 > Declarative NixOS flake configuration for the **ThinkPad L390** (Intel i5-8365U / UHD 620)  
-> Hyprland · LUKS · Btrfs · Catppuccin Mocha · Home Manager · Firejail
+> Hyprland · hy3 · LUKS · Btrfs · Catppuccin Mocha · Home Manager · Firejail
 
 ![NixOS](https://img.shields.io/badge/NixOS-unstable-5277C3?style=flat&logo=nixos&logoColor=white)
-![Hyprland](https://img.shields.io/badge/Hyprland-latest-58E1FF?style=flat)
+![Hyprland](https://img.shields.io/badge/Hyprland-v0.54.2-58E1FF?style=flat)
 ![License](https://img.shields.io/badge/license-MIT-green?style=flat)
 
 ---
@@ -28,8 +28,11 @@
 - **Btrfs** with subvolumes (`@`, `@home`, `@nix`, `@snapshots`, `@log`) and zstd compression
 - **Hibernation** — swap encrypted with LUKS, resume device configured
 - **Hyprland** — Wayland compositor with UWSM, animations, gestures
-- **Catppuccin Mocha** — unified theme across all apps (Waybar, Rofi, Neovim, Alacritty, Hyprlock)
-- **Firejail sandboxing** — Brave, Brave HW profile, and Claude Code run in isolated sandboxes
+- **hy3** — i3/sway-style manual tiling layout plugin
+- **Ghostty** — primary terminal with shell integration, tabs, splits
+- **Yazi** — terminal file manager with Catppuccin theme and configured openers
+- **Catppuccin Mocha** — unified theme across all apps (Waybar, Rofi, Neovim, Ghostty, Hyprlock, Yazi)
+- **Firejail sandboxing** — Brave, Claude Code, and mpv run in isolated sandboxes
 - **Home Manager** — fully declarative user environment
 - **TLP** — advanced laptop power management with ThinkPad charge thresholds
 - **PipeWire** — modern audio stack with SwayOSD OSD
@@ -54,10 +57,12 @@
 │       └── hardware-configuration.nix  # Auto-generated hardware config
 ├── modules/
 │   ├── home/                    # Home Manager modules
-│   │   ├── home.nix             # Main HM entry point + Hyprland config
+│   │   ├── home.nix             # Main HM entry point + Hyprland + hy3 config
 │   │   ├── theme.nix            # Catppuccin Mocha — single source of truth
+│   │   ├── ghostty.nix          # Ghostty terminal
 │   │   ├── waybar.nix           # Status bar
 │   │   ├── rofi.nix             # App launcher
+│   │   ├── yazi.nix             # File manager config, openers, theme
 │   │   ├── neovim.nix           # Editor with LSP, treesitter, AI
 │   │   ├── hyprlock.nix         # Lock screen + idle daemon (hypridle)
 │   │   ├── mako.nix             # Notifications
@@ -85,23 +90,24 @@
 
 ## Wallpaper
 
-Wallpaper is managed by `awww` and set on login via `exec-once`. To change it:
+The wallpaper path is defined once as the `WALLPAPER` environment variable in
+`modules/system/hyprland.nix`. It is used by both `awww` (wallpaper daemon)
+and hyprlock (lock screen background).
+
+To change it, update `WALLPAPER` in `hyprland.nix` and `rebuild`. To preview
+it immediately without rebuilding:
 
 ```bash
-# Copy your image to the wallpapers directory
-cp ~/Pictures/your-wallpaper.jpg ~/.config/nixos/wallpapers/
-
-# Set it immediately
-awww img ~/.config/nixos/wallpapers/your-wallpaper.jpg
+awww img ~/Pictures/your-wallpaper.jpg
 ```
-
-Then update `exec-once` in `modules/home/home.nix` to point to the new file and `rebuild`.
 
 ---
 
 ## Theme
 
-All colours and fonts are defined in `modules/home/theme.nix` and passed to every module via `specialArgs`. To change the theme globally, edit that file and run `rebuild`.
+All colours and fonts are defined in `modules/home/theme.nix` and passed to
+every module via `specialArgs`. To change the theme globally, edit that file
+and run `rebuild`.
 
 **Current theme:** Catppuccin Mocha with blue accent (`#89b4fa`)
 
@@ -118,19 +124,21 @@ All colours and fonts are defined in `modules/home/theme.nix` and passed to ever
 
 ## Key Bindings
 
+### General
+
 | Key | Action |
 |-----|--------|
-| `Super + Return` | Terminal (Alacritty) |
+| `Super + Return` | Terminal (Ghostty) |
 | `Super + B` | Browser (Brave) |
 | `Super + E` | File manager (Yazi) |
 | `Super + Space` | App launcher (Rofi) |
 | `Super + O` | Quick notes (Neovim) |
-| `Super + Q` | Kill window |
+| `Super + Q` | Kill window (hy3-aware) |
 | `Super + F` | Fullscreen |
-| `Super + V` | Float/tile toggle |
+| `Super + G` | Float/tile toggle |
 | `Super + L` | Lock screen |
 | `Super + 1-5` | Switch workspace |
-| `Super + Shift + 1-5` | Move window to workspace |
+| `Super + Shift + 1-5` | Move window to workspace (hy3) |
 | `Super + N` | Blue light filter cycle |
 | `Super + Shift + N` | Blue light filter off |
 | `Super + M` | Battery mode cycle |
@@ -142,6 +150,34 @@ All colours and fonts are defined in `modules/home/theme.nix` and passed to ever
 | `Super + Ctrl + F2` | WiFi toggle on/off |
 | `Super + Shift + S` | Screenshot region → clipboard |
 | `Super + Shift + E` | Exit Hyprland |
+
+### hy3 Tiling
+
+| Key | Action |
+|-----|--------|
+| `Super + H` | Create horizontal split |
+| `Super + V` | Create vertical split |
+| `Super + R` | Toggle split direction |
+| `Super + Arrow` | Move focus (hy3-aware) |
+| `Super + Shift + Arrow` | Move window in hy3 tree |
+| `Super + Ctrl + Arrow` | Resize window |
+| `Super + RMB drag` | Move floating window |
+| `Super + LMB drag` | Resize window |
+
+### Yazi File Manager
+
+| Key | Action |
+|-----|--------|
+| `h/j/k/l` | Navigate |
+| `Enter` / `l` | Open file / enter directory |
+| `Space` | Toggle selection |
+| `V` | Select all |
+| `y/x/p` | Copy / cut / paste |
+| `d/D` | Trash / delete permanently |
+| `a/r` | Create / rename |
+| `.` | Toggle hidden files |
+| `z` | Jump with fzf |
+| `t` / `[` / `]` | New tab / prev / next |
 
 ---
 
@@ -248,7 +284,8 @@ rebuild
 
 ## YouTube / Media
 
-mpv is configured with yt-dlp for seamless YouTube playback.
+mpv is sandboxed via Firejail (upstream mpv profile) and configured with
+yt-dlp for seamless YouTube playback.
 
 | Command | What it does |
 |---------|-------------|
@@ -300,13 +337,13 @@ mpv is configured with yt-dlp for seamless YouTube playback.
 ## Security
 
 - Full disk encryption with LUKS2 on root and swap
-- Brave browser sandboxed with Firejail (strict profile, `~/Downloads` only)
-- `brave-hw` — separate Brave instance with its own profile and broader whitelist (for hardware/dev sites)
+- Brave sandboxed with Firejail (strict profile, `~/Downloads` only)
 - Claude Code sandboxed with Firejail (`~/projects`, `~/Documents`, `~/.config/claude`, `~/.local/share/claude`)
+- mpv sandboxed with Firejail (upstream mpv profile — covers media dirs, yt-dlp, Lua)
 - AppArmor enabled
 - sudo requires password (wheel group)
 - Passwordless sudo only for `tlp setcharge` (battery threshold management)
-- GNOME Keyring for VS Code / Electron credential storage
+- GNOME Keyring for Electron credential storage
 - Root login disabled
 
 ---
@@ -315,6 +352,9 @@ mpv is configured with yt-dlp for seamless YouTube playback.
 
 - [NixOS](https://nixos.org/) — the operating system
 - [Hyprland](https://hyprland.org/) — Wayland compositor
+- [hy3](https://github.com/outfoxxed/hy3) — i3-style tiling layout plugin
+- [Ghostty](https://ghostty.org/) — terminal emulator
+- [Yazi](https://yazi-rs.github.io/) — terminal file manager
 - [Catppuccin](https://catppuccin.com/) — colour scheme
 - [nixos-hardware](https://github.com/NixOS/nixos-hardware) — ThinkPad X390 profile (closest match for L390)
 - [disko](https://github.com/nix-community/disko) — declarative disk partitioning
