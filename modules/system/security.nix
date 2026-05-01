@@ -1,10 +1,12 @@
 # modules/system/security.nix
-# Firejail sandboxing, GnuPG, AppArmor, PAM, GNOME Keyring
+# Firejail sandboxing, AppArmor, PAM, GNOME Keyring
 
 { pkgs, ... }:
 
 let
-  # ── Brave (main profile) ──────────────────────────────────────────────────
+  # ── Brave ─────────────────────────────────────────────────────────────────
+  # Wayland-optimised build with Firejail sandbox join logic and systemd
+  # scope management — wrappedBinaries can't express these requirements
   brave-wayland = pkgs.brave.override {
     commandLineArgs = [
       "--ozone-platform=wayland"
@@ -23,17 +25,6 @@ let
     whitelist ''${HOME}/Downloads
   '';
 
-  brave-hw-profile = pkgs.writeText "brave-hw.profile" ''
-    include ${pkgs.firejail}/etc/firejail/brave.profile
-    whitelist ''${HOME}/.config/brave-hw
-    whitelist ''${HOME}/Downloads
-    whitelist ''${HOME}/Documents
-    whitelist ''${HOME}/Pictures
-    whitelist ''${HOME}/Videos
-    ignore private-dev
-    ignore nou2f
-  '';
-
   brave-wrapper = pkgs.writeShellScriptBin "brave" ''
     FIREJAIL=/run/wrappers/bin/firejail
     BRAVE=${brave-wayland}/bin/brave
@@ -43,20 +34,6 @@ let
       exec $SYSTEMD_RUN "$FIREJAIL" --join=brave "$BRAVE" "$@"
     else
       exec $SYSTEMD_RUN "$FIREJAIL" --name=brave --profile=${brave-profile} "$BRAVE" "$@"
-    fi
-  '';
-
-  brave-hw-wrapper = pkgs.writeShellScriptBin "brave-hw" ''
-    FIREJAIL=/run/wrappers/bin/firejail
-    BRAVE=${brave-wayland}/bin/brave
-    SYSTEMD_RUN="${pkgs.systemd}/bin/systemd-run --user --quiet --scope --slice=app-brave.slice"
-    USER_DATA_DIR="$HOME/.config/brave-hw"
-    mkdir -p "$USER_DATA_DIR"
-
-    if "$FIREJAIL" --list 2>/dev/null | ${pkgs.gnugrep}/bin/grep -q ":brave-hw:"; then
-      exec $SYSTEMD_RUN "$FIREJAIL" --join=brave-hw "$BRAVE" --user-data-dir="$USER_DATA_DIR" "$@"
-    else
-      exec $SYSTEMD_RUN "$FIREJAIL" --name=brave-hw --profile=${brave-hw-profile} "$BRAVE" --user-data-dir="$USER_DATA_DIR" "$@"
     fi
   '';
 
@@ -93,18 +70,17 @@ in
     enable = true;
 
     wrappedBinaries = {
-      # mpv — uses the upstream built-in profile which already handles
-      # yt-dlp, Lua scripts, ~/Videos, ~/Music, ~/Pictures, ~/Downloads
+      # mpv — upstream profile covers ~/Videos, ~/Music, ~/Pictures,
+      # ~/Downloads, yt-dlp, Lua scripts, VA-API, PipeWire
       mpv = {
         executable = "${pkgs.mpv}/bin/mpv";
-        profile = "${pkgs.firejail}/etc/firejail/mpv.profile";
+        profile    = "${pkgs.firejail}/etc/firejail/mpv.profile";
       };
     };
   };
 
-  # Brave and Claude use custom shell wrappers (not wrappedBinaries) because
-  # they need sandbox join logic and systemd scope management that the simple
-  # wrappedBinaries pattern can't express.
+  # Brave and Claude use shell wrappers (not wrappedBinaries) because they
+  # need sandbox join logic and systemd scope management
 
   # ── AppArmor ──────────────────────────────────────────────────────────────
   security.apparmor.enable = true;
@@ -116,6 +92,7 @@ in
   # ── Sudo ──────────────────────────────────────────────────────────────────
   security.sudo.wheelNeedsPassword = true;
 
+  # Passwordless sudo only for TLP battery threshold management
   security.sudo.extraRules = [
     {
       users = [ "nimbus" ];
@@ -130,18 +107,18 @@ in
 
   # ── PAM ───────────────────────────────────────────────────────────────────
   security.pam.services = {
-    login.enableGnomeKeyring = true;
+    login.enableGnomeKeyring  = true;
     passwd.enableGnomeKeyring = true;
-    hyprlock = { };
+    hyprlock                  = {};
   };
 
   # ── GNOME Keyring ─────────────────────────────────────────────────────────
+  # Secret Service provider for Electron credential storage
   services.gnome.gnome-keyring.enable = true;
 
   # ── Packages ──────────────────────────────────────────────────────────────
   environment.systemPackages = [
     brave-wrapper
-    brave-hw-wrapper
     claude-wrapper
     pkgs.libsecret
   ];
