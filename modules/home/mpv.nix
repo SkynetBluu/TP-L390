@@ -6,6 +6,21 @@
 let
   # ── Scripts ───────────────────────────────────────────────────────────────
 
+  # Helper script for yts fzf preview
+  yt-preview = pkgs.writeShellScriptBin "yt-preview" ''
+    ID="$1"
+    FILE="$2"
+    ${pkgs.jq}/bin/jq -r --arg id "$ID" '
+      .[] | select(.id == $id) |
+      "Title:    " + .title + "\n" +
+      "Channel:  " + (.channel // "Unknown") + "\n" +
+      "Duration: " + (.duration_string // "?") + "\n" +
+      "Views:    " + ((.view_count // 0) | tostring) + "\n" +
+      "Upload:   " + (.upload_date // "?") + "\n\n" +
+      (.description // "No description" | .[0:400])
+    ' "$FILE"
+  '';
+
   # Interactive YouTube search and play via fzf
   yt-search = pkgs.writeShellScriptBin "yt-search" ''
     set -euo pipefail
@@ -17,7 +32,6 @@ let
     QUERY="$*"
     echo "🔍 Searching YouTube for: $QUERY"
 
-    # Search and get results as JSON
     RESULTS=$(${pkgs.yt-dlp}/bin/yt-dlp \
       "ytsearch10:$QUERY" \
       --flat-playlist \
@@ -30,36 +44,22 @@ let
       exit 1
     fi
 
-    # Save to temp file so fzf preview subshell can access it
     RESULTS_FILE=$(mktemp /tmp/yts-XXXX.json)
     echo "$RESULTS" > "$RESULTS_FILE"
     trap "rm -f $RESULTS_FILE" EXIT
 
-    # Format results for fzf (id TAB display)
     FORMATTED=$(echo "$RESULTS" | ${pkgs.jq}/bin/jq -r \
       '"\(.id)\t\(.title) [\(.duration_string // "?")]  \(.channel // "Unknown")"')
 
-    # Pick with fzf — preview reads from temp file
     SELECTED=$(echo "$FORMATTED" | \
       ${pkgs.fzf}/bin/fzf \
         --delimiter='\t' \
         --with-nth=2 \
         --prompt="▶ " \
         --header="YouTube Search: $QUERY  (Enter to play, Ctrl+C to cancel)" \
-        --preview="${pkgs.bash}/bin/bash -c '
-          ID=\$(echo {} | cut -f1)
-          ${pkgs.jq}/bin/jq -r --arg id \"\$ID\" \"
-            .[] | select(.id == \\\$id) |
-            \\\"Title:    \\\" + .title + \\\"\n\\\" +
-            \\\"Channel:  \\\" + (.channel // \\\"Unknown\\\") + \\\"\n\\\" +
-            \\\"Duration: \\\" + (.duration_string // \\\"?\\\") + \\\"\n\\\" +
-            \\\"Views:    \\\" + ((.view_count // 0) | tostring) + \\\"\n\\\" +
-            \\\"Upload:   \\\" + (.upload_date // \\\"?\\\") + \\\"\n\n\\\" +
-            (.description // \\\"No description\\\" | .[0:400])
-          \" ${pkgs.jq}/bin/jq -r --arg id \"\$ID\" . $RESULTS_FILE
-        '" \
+        --preview="${yt-preview}/bin/yt-preview {1} $RESULTS_FILE" \
         --preview-window=right:45%:wrap \
-        --height=80%) || { rm -f "$RESULTS_FILE"; exit 0; }
+        --height=80%) || exit 0
 
     VIDEO_ID=$(echo "$SELECTED" | cut -f1)
     VIDEO_TITLE=$(echo "$SELECTED" | cut -f2)
@@ -321,6 +321,7 @@ in
   # ── Scripts and packages ──────────────────────────────────────────────────
 
   home.packages = [
+    yt-preview
     yt-search
     yt-playlist
     yt-download
