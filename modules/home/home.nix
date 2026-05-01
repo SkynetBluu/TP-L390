@@ -23,6 +23,7 @@
     ./scripts.nix
     ./waybar.nix
     ./rofi.nix
+    ./mpv.nix
   ];
 
   # ── Packages ──────────────────────────────────────────────────────────────
@@ -120,11 +121,6 @@
       du = "du -h";
       free = "free -h";
 
-      # YouTube
-      yt = "mpv --ytdl-format=bestvideo+bestaudio";
-      ytmp3 = "yt-dlp -x --audio-format mp3 --output '~/Music/%(title)s.%(ext)s'";
-      ytvid = "yt-dlp --output '~/Videos/%(title)s.%(ext)s'";
-
       # NixOS shortcuts
       rebuild = "nh os switch ~/.config/nixos";
       update = "nh os switch --update ~/.config/nixos";
@@ -208,6 +204,7 @@
       misc = { force_default_wallpaper = 0; disable_hyprland_logo = true; };
 
       exec-once = [
+        "hypridle"
         "mako"
         "awww"
         "/run/current-system/sw/libexec/polkit-kde-authentication-agent-1"
