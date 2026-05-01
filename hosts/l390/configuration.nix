@@ -139,6 +139,7 @@
     popsicle
     papirus-icon-theme
     hypridle
+    hyprlock
     yt-dlp
     mpv
     yewtube
