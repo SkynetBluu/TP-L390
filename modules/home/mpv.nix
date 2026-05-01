@@ -10,15 +10,17 @@ let
   yt-preview = pkgs.writeShellScriptBin "yt-preview" ''
     ID="$1"
     FILE="$2"
-    ${pkgs.jq}/bin/jq -r --arg id "$ID" '
-      .[] | select(.id == $id) |
+    # yt-dlp outputs NDJSON (one object per line), not a JSON array
+    # Use grep+jq to find the matching entry
+    ${pkgs.gnugrep}/bin/grep "\"id\":\"$ID\"" "$FILE" | \
+    ${pkgs.jq}/bin/jq -r '
       "Title:    " + .title + "\n" +
       "Channel:  " + (.channel // "Unknown") + "\n" +
       "Duration: " + (.duration_string // "?") + "\n" +
       "Views:    " + ((.view_count // 0) | tostring) + "\n" +
       "Upload:   " + (.upload_date // "?") + "\n\n" +
       (.description // "No description" | .[0:400])
-    ' "$FILE"
+    ' 2>/dev/null || echo "No preview available"
   '';
 
   # Interactive YouTube search and play via fzf
