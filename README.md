@@ -77,7 +77,25 @@
 │       └── users.nix            # User accounts
 └── overlays/
     └── claude-code-latest.nix   # Claude Code prebuilt binary
+└── wallpapers/
+    └── hiroshi-tsubono-medium.jpg  # Default wallpaper
 ```
+
+---
+
+## Wallpaper
+
+Wallpaper is managed by `awww` and set on login via `exec-once`. To change it:
+
+```bash
+# Copy your image to the wallpapers directory
+cp ~/Pictures/your-wallpaper.jpg ~/.config/nixos/wallpapers/
+
+# Set it immediately
+awww img ~/.config/nixos/wallpapers/your-wallpaper.jpg
+```
+
+Then update `exec-once` in `modules/home/home.nix` to point to the new file and `rebuild`.
 
 ---
 
