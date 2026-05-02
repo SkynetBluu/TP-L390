@@ -26,6 +26,7 @@
     ./mpv.nix
     ./yazi.nix
     ./ghostty.nix
+    ./zellij.nix
   ];
 
   # ── Packages ──────────────────────────────────────────────────────────────
@@ -230,6 +231,7 @@
         "$mod, Return,      exec, ghostty"
         "$mod, B,           exec, brave"
         "$mod, E,           exec, ghostty -e yazi"
+        "$mod, Z, exec, ghostty -e zellij"
         "$mod, Space,       exec, rofi -show drun"
         "$mod, O,           exec, quick-notes"
         "$mod SHIFT, S,     exec, grim -g \"$(slurp)\" - | wl-copy"

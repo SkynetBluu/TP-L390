@@ -31,6 +31,7 @@
 - **hy3** — i3/sway-style manual tiling layout plugin
 - **Ghostty** — primary terminal with shell integration, tabs, splits
 - **Yazi** — terminal file manager with Catppuccin theme and configured openers
+- **Zellij** — terminal session manager with persistent sessions, splits, floating panes
 - **Catppuccin Mocha** — unified theme across all apps (Waybar, Rofi, Neovim, Ghostty, Hyprlock, Yazi)
 - **Firejail sandboxing** — Brave, Claude Code, and mpv run in isolated sandboxes
 - **Home Manager** — fully declarative user environment
@@ -69,6 +70,7 @@
 │   │   ├── swayosd.nix          # Volume/brightness OSD
 │   │   ├── gtk.nix              # GTK theming + cursor
 │   │   ├── mpv.nix              # mpv + yt-dlp + YouTube scripts
+│   │   ├── zellij.nix           # Terminal session manager
 │   │   ├── desktop-entries.nix  # XDG desktop entries + launcher scripts
 │   │   └── scripts.nix          # Helper scripts (battery, bluelight, wifi, etc.)
 │   └── system/                  # NixOS modules
@@ -149,6 +151,7 @@ and run `rebuild`.
 | `Super + Shift + F2` | WiFi scan (wofi picker) |
 | `Super + Ctrl + F2` | WiFi toggle on/off |
 | `Super + Shift + S` | Screenshot region → clipboard |
+| `Super + Z` | Zellij session manager |
 | `Super + Shift + E` | Exit Hyprland |
 
 ### hy3 Tiling
@@ -163,6 +166,23 @@ and run `rebuild`.
 | `Super + Ctrl + Arrow` | Resize window |
 | `Super + RMB drag` | Move floating window |
 | `Super + LMB drag` | Resize window |
+
+### Zellij Session Manager
+
+| Key | Action |
+|-----|--------|
+| `Alt + N` | New pane (split right) |
+| `Alt + Shift + N` | New pane (split down) |
+| `Alt + H/J/K/L` | Move focus between panes |
+| `Alt + F` | Toggle floating pane |
+| `Alt + T` | New tab |
+| `Alt + W` | Close tab |
+| `Alt + ,` / `Alt + .` | Previous / next tab |
+| `Alt + 1-5` | Go to tab |
+| `Alt + Q` | Detach session |
+| `Alt + =` / `Alt + -` | Resize pane |
+| `Alt + U` / `Alt + D` | Scroll half page |
+| `Ctrl + G` | Toggle locked mode (pass keys to terminal) |
 
 ### Yazi File Manager
 
@@ -355,6 +375,7 @@ yt-dlp for seamless YouTube playback.
 - [hy3](https://github.com/outfoxxed/hy3) — i3-style tiling layout plugin
 - [Ghostty](https://ghostty.org/) — terminal emulator
 - [Yazi](https://yazi-rs.github.io/) — terminal file manager
+- [Zellij](https://zellij.dev/) — terminal session manager
 - [Catppuccin](https://catppuccin.com/) — colour scheme
 - [nixos-hardware](https://github.com/NixOS/nixos-hardware) — ThinkPad X390 profile (closest match for L390)
 - [disko](https://github.com/nix-community/disko) — declarative disk partitioning

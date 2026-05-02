@@ -168,11 +168,12 @@ in
 
     # ── Left — keybindings (top-left, grows downward) ─────────────────────
     ${mkSection "── KEYBINDINGS ─────────────────────" [
-      "SUPER + Return           Terminal"
-      "SUPER + B                Web Browser"
-      "SUPER + E                File Explorer"
-      "SUPER + Space            Launcher"
-      "SUPER + O                Notes"
+      "SUPER + Return           Terminal             Ghostty"
+      "SUPER + Z                Session Manager      Zellij"
+      "SUPER + B                Web Browser          Brave"
+      "SUPER + E                File Explorer        Yazi"
+      "SUPER + Space            Launcher             Rofi"
+      "SUPER + O                Notes                Neovim"
       "SUPER + Shift + S        Screenshot"
       "SUPER + N                Blue light"
       "SUPER + M                Battery"

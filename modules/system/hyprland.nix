@@ -53,7 +53,7 @@ in
   # ── Wayland environment variables ─────────────────────────────────────────
   # NOTE: XDG_CURRENT_DESKTOP, XDG_SESSION_TYPE set automatically by UWSM
   environment.sessionVariables = {
-    WALLPAPER = $WALLPAPER;
+    WALLPAPER = "/home/nimbus/.config/nixos/wallpapers/hiroshi-tsubono-medium.jpg";
     NIXOS_OZONE_WL = "1"; # Electron apps (VS Code, Brave)
     MOZ_ENABLE_WAYLAND = "1"; # Firefox
     QT_QPA_PLATFORM = "wayland;xcb"; # Qt apps (xcb fallback)
