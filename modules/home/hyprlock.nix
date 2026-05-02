@@ -174,6 +174,7 @@ in
       "SUPER + E                File Explorer        Yazi"
       "SUPER + Space            Launcher             Rofi"
       "SUPER + O                Notes                Neovim"
+      "SUPER + K                KiCad"
       "SUPER + Shift + S        Screenshot"
       "SUPER + N                Blue light"
       "SUPER + M                Battery"

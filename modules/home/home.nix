@@ -42,6 +42,7 @@
     zip
     p7zip
     lazygit
+    pkgs.kicad
   ];
 
   # ── Git ───────────────────────────────────────────────────────────────────
@@ -231,7 +232,8 @@
         "$mod, Return,      exec, ghostty"
         "$mod, B,           exec, brave"
         "$mod, E,           exec, ghostty -e yazi"
-        "$mod, Z, exec, ghostty -e zellij"
+        "$mod, Z,           exec, ghostty -e zellij"
+        "$mod, K,           exec, kicad"
         "$mod, Space,       exec, rofi -show drun"
         "$mod, O,           exec, quick-notes"
         "$mod SHIFT, S,     exec, grim -g \"$(slurp)\" - | wl-copy"
