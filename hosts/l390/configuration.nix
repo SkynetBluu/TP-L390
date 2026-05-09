@@ -148,6 +148,31 @@
   services.fwupd.enable = true;
   services.smartd.enable = true;
 
+  # ── Services ── mpd ──────────────────────────────────────────────────────
+
+  services.mpd = {
+    enable = true;
+    user = "nimbus";
+    settings = {
+      music_directory = "/share/slskd/share";
+      audio_output = [{
+        type = "pipewire";
+        name = "PipeWire";
+      }];
+
+      # Save state, so playlist/position survives restart
+      auto_update    = "yes";
+      restore_paused = "yes";
+      filesystem_charset =  "UTF-8";
+    };
+    # default network setup is fine: localhost:6600
+  };
+
+  # MPD runs as a system service but needs to reach PipeWire's user socket
+  systemd.services.mpd.environment = {
+    XDG_RUNTIME_DIR = "/run/user/1000";
+  };
+
   # ── Services ── slskd ─────────────────────────────────────────────────────
   users.users.nimbus.extraGroups = [ "slskd" ];
 

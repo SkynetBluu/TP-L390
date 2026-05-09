@@ -47,6 +47,8 @@
     nemo-with-extensions
     ffmpegthumbnailer        # video thumbnails
     webp-pixbuf-loader       # webp image previews
+    rmpc
+    mpc
   ];
 
   # ── Git ───────────────────────────────────────────────────────────────────
