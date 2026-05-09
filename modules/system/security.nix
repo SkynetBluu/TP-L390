@@ -52,7 +52,12 @@ let
       --whitelist="$HOME/.anthropic" \
       --whitelist=/run/current-system \
       --whitelist=/nix/store \
+      --private-etc=ssl,static,hosts,nsswitch.conf \
+      --dns=1.1.1.1 \
+      --dns=1.0.0.1 \
       --env=HOME="$HOME" \
+      --env=DISABLE_AUTOUPDATER=1 \
+      --env=DISABLE_UPDATES=1 \
       --caps.drop=all \
       --nonewprivs \
       --noroot \
@@ -61,6 +66,7 @@ let
       --private-tmp \
       --protocol=unix,inet,inet6 \
       "$CLAUDE" "$@"
+
   '';
 
 in
@@ -74,7 +80,11 @@ in
       # ~/Downloads, yt-dlp, Lua scripts, VA-API, PipeWire
       mpv = {
         executable = "${pkgs.mpv}/bin/mpv";
-        profile    = "${pkgs.firejail}/etc/firejail/mpv.profile";
+        profile = "${pkgs.firejail}/etc/firejail/mpv.profile";
+      };
+      qbittorrent = {
+        executable = "${pkgs.qbittorrent}/bin/qbittorrent";
+        profile = "${pkgs.firejail}/etc/firejail/qbittorrent.profile";
       };
     };
   };
@@ -107,9 +117,9 @@ in
 
   # ── PAM ───────────────────────────────────────────────────────────────────
   security.pam.services = {
-    login.enableGnomeKeyring  = true;
+    login.enableGnomeKeyring = true;
     passwd.enableGnomeKeyring = true;
-    hyprlock                  = {};
+    hyprlock = { };
   };
 
   # ── GNOME Keyring ─────────────────────────────────────────────────────────
@@ -121,5 +131,6 @@ in
     brave-wrapper
     claude-wrapper
     pkgs.libsecret
+    pkgs.qbittorrent
   ];
 }

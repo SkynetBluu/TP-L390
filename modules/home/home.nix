@@ -169,7 +169,33 @@
 
     settings = {
 
-      monitor = "eDP-1,1920x1080@60,0x0,1";
+      # ── Monitors ──────────────────────────────────────────────────────────
+      # Laptop (eDP-1): 1920x1080 @ scale 1 → logical 1920x1080
+      # External (HDMI-A-2): 2560x1600 @ scale 1.6 → logical 1600x1000, placed ABOVE laptop
+      # Position math uses *logical* (scaled) pixels: external Y = -1000, not -1600.
+      # `desc:` matching is portable across ports/docks; fallback rule catches anything else.
+      monitor = [
+        "desc:BOE 0x06FA, 1920x1080@60, 0x0, 1"
+        "desc:BOE J560T09, 2560x1600@60, 0x-1000, 1.6"
+        ", preferred, auto, 1"
+      ];
+
+      # ── Workspaces ────────────────────────────────────────────────────────
+      # 1–5 → laptop (default workspace 1), 6–10 → external (default workspace 6).
+      # `persistent:true` keeps them alive when empty so Waybar always shows 5 boxes per bar.
+      # On unplug, Hyprland default behaviour: workspaces migrate to remaining monitor.
+      workspace = [
+        "1, monitor:desc:BOE 0x06FA, default:true, persistent:true"
+        "2, monitor:desc:BOE 0x06FA, persistent:true"
+        "3, monitor:desc:BOE 0x06FA, persistent:true"
+        "4, monitor:desc:BOE 0x06FA, persistent:true"
+        "5, monitor:desc:BOE 0x06FA, persistent:true"
+        "6, monitor:desc:BOE J560T09, default:true, persistent:true"
+        "7, monitor:desc:BOE J560T09, persistent:true"
+        "8, monitor:desc:BOE J560T09, persistent:true"
+        "9, monitor:desc:BOE J560T09, persistent:true"
+        "10, monitor:desc:BOE J560T09, persistent:true"
+      ];
 
       general = {
         gaps_in = 5;
@@ -269,6 +295,11 @@
         "$mod SHIFT, 3, hy3:movetoworkspace, 3"
         "$mod SHIFT, 4, hy3:movetoworkspace, 4"
         "$mod SHIFT, 5, hy3:movetoworkspace, 5"
+        "$mod SHIFT, 6, hy3:movetoworkspace, 6"
+        "$mod SHIFT, 7, hy3:movetoworkspace, 7"
+        "$mod SHIFT, 8, hy3:movetoworkspace, 8"
+        "$mod SHIFT, 9, hy3:movetoworkspace, 9"
+        "$mod SHIFT, 0, hy3:movetoworkspace, 10"
 
         # Resize window with keys
         "$mod CTRL, left,  resizeactive, -50 0"
@@ -286,6 +317,11 @@
         "$mod, 3,           workspace, 3"
         "$mod, 4,           workspace, 4"
         "$mod, 5,           workspace, 5"
+        "$mod, 6,           workspace, 6"
+        "$mod, 7,           workspace, 7"
+        "$mod, 8,           workspace, 8"
+        "$mod, 9,           workspace, 9"
+        "$mod, 0,           workspace, 10"
 
         "$mod, mouse_down,  workspace, e+1"
         "$mod, mouse_up,    workspace, e-1"
@@ -345,6 +381,7 @@
         "image/gif" = "imv.desktop";
         "x-scheme-handler/http" = "brave-browser.desktop";
         "x-scheme-handler/https" = "brave-browser.desktop";
+        "inode/directory" = "yazi-ghostty.desktop";
       };
     };
 

@@ -291,6 +291,58 @@ let
   '';
 
 
+  # ── Power menu ───────────────────────────────────────────────────────────
+  # Rofi-based power menu invoked from waybar. Two-step: pick action, confirm.
+  # Logout uses `uwsm stop` (canonical under UWSM — `hyprctl dispatch exit`
+  # is discouraged with UWSM and can leave a black screen).
+  # Suspend/reboot/poweroff go through systemctl so systemd brings down the
+  # graphical session cleanly.
+
+  power-menu = pkgs.writeShellScriptBin "power-menu" ''
+    set -euo pipefail
+
+    ROFI="${pkgs.rofi}/bin/rofi"
+
+    # Step 1: action picker
+    OPTIONS="󰌾  Lock
+󰍃  Logout
+󰒲  Suspend
+󰜉  Reboot
+󰐥  Shutdown"
+
+    CHOICE=$(printf '%s\n' "$OPTIONS" | "$ROFI" \
+      -dmenu \
+      -i \
+      -p "󰐥 Power" \
+      -theme-str 'window {width: 280px;}' \
+      -theme-str 'listview {lines: 5; scrollbar: false; fixed-height: true;}' \
+      || true)
+
+    [ -z "$CHOICE" ] && exit 0
+
+    # Strip leading icon + spaces to get the bare action name
+    ACTION=$(printf '%s' "$CHOICE" | ${pkgs.gnused}/bin/sed 's/^[^ ]*  *//')
+
+    # Step 2: confirm. "No" first so accidental Enter cancels.
+    CONFIRM=$(printf 'No\nYes' | "$ROFI" \
+      -dmenu \
+      -i \
+      -p "$ACTION?" \
+      -theme-str 'window {width: 240px;}' \
+      -theme-str 'listview {lines: 2; scrollbar: false; fixed-height: true;}' \
+      || true)
+
+    [ "$CONFIRM" != "Yes" ] && exit 0
+
+    case "$ACTION" in
+      Lock)     exec loginctl lock-session ;;
+      Logout)   exec ${pkgs.uwsm}/bin/uwsm stop ;;
+      Suspend)  exec systemctl suspend ;;
+      Reboot)   exec systemctl reboot ;;
+      Shutdown) exec systemctl poweroff ;;
+    esac
+  '';
+
   # ── hypr-current-workspace-launch ────────────────────────────────────────
 
   hypr-current-workspace-launch = pkgs.writeShellScriptBin "hypr-current-workspace-launch" ''
@@ -323,6 +375,7 @@ in
     wifi-manage
     quick-notes
     sysinfo-panel
+    power-menu
     hypr-current-workspace-launch
     # Runtime deps for scripts
     pkgs.hyprsunset

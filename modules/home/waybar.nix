@@ -4,6 +4,136 @@
 
 { config, pkgs, theme, ... }:
 
+let
+  # Shared bar config — everything that's identical between laptop and external bars.
+  # Only `output` and `hyprland/workspaces.persistent-workspaces` differ per-monitor.
+  commonBar = {
+    layer = "top";
+    position = "top";
+    height = 34;
+    spacing = 2;
+
+    modules-left = [ "hyprland/workspaces" "hyprland/window" ];
+    modules-center = [ "clock" ];
+    modules-right = [
+      "cpu"
+      "memory"
+      "temperature"
+      "backlight"
+      "pulseaudio"
+      "network"
+      "battery"
+      "custom/power"
+      "tray"
+    ];
+
+    "custom/power" = {
+      format = "⏻";
+      tooltip = true;
+      tooltip-format = "Power menu";
+      on-click = "power-menu";
+    };
+
+    "hyprland/window" = {
+      max-length = 60;
+      separate-outputs = true;
+      rewrite = {
+        "(.*) - Brave" = "$1";
+        "(.*) - Ghostty" = "$1";
+      };
+    };
+
+    clock = {
+      format = " {:%H:%M}";
+      format-alt = " {:%A %d %B %Y — %H:%M}";
+      tooltip-format = "<tt><small>{calendar}</small></tt>";
+      calendar = {
+        mode = "month";
+        on-scroll = 1;
+      };
+    };
+
+    cpu = {
+      format = "󰻠 {usage}%";
+      interval = 5;
+      tooltip = true;
+      on-click = "ghostty -e btop";
+    };
+
+    memory = {
+      format = "󰍛 {percentage}%";
+      interval = 10;
+      tooltip-format = "RAM: {used:0.1f}GB / {total:0.1f}GB";
+      on-click = "ghostty -e btop";
+    };
+
+    temperature = {
+      hwmon-path = "/sys/class/hwmon/hwmon6/temp1_input";
+      critical-threshold = 85;
+      format = " {temperatureC}°C";
+      tooltip = true;
+    };
+
+    backlight = {
+      device = "intel_backlight";
+      format = "{icon} {percent}%";
+      format-icons = [ "󰃞" "󰃟" "󰃠" ];
+      on-scroll-up = "brightnessctl set +5%";
+      on-scroll-down = "brightnessctl set 5%-";
+    };
+
+    pulseaudio = {
+      format = "{icon} {volume}%";
+      format-muted = "󰝟 muted";
+      format-icons = {
+        default = [ "󰕿" "󰖀" "󰕾" ];
+      };
+      on-click = "pavucontrol";
+      on-scroll-up = "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+";
+      on-scroll-down = "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-";
+      on-click-right = "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle";
+    };
+
+    network = {
+      format-wifi = "󰤨 {signalStrength}% {essid}";
+      format-ethernet = "󰈀 {bandwidthDownBytes}";
+      format-disconnected = "󰤭";
+      tooltip-format-wifi = "󰤨 {essid}\nIP: {ipaddr}\nStrength: {signalStrength}%\n⇣ {bandwidthDownBytes}  ⇡ {bandwidthUpBytes}";
+      tooltip-format-ethernet = "󰈀 {ifname}\nIP: {ipaddr}";
+      on-click = "ghostty -e nmtui";
+      interval = 10;
+    };
+
+    battery = {
+      states = {
+        warning = 30;
+        critical = 15;
+      };
+      format = "{icon} {capacity}%";
+      format-charging = "󰂄 {capacity}%";
+      format-plugged = "󰚥 {capacity}%";
+      format-icons = [ "󰂎" "󰁺" "󰁻" "󰁼" "󰁽" "󰁾" "󰁿" "󰂀" "󰂁" "󰂂" "󰁹" ];
+      tooltip-format = "{timeTo}\nPower: {power:.1f}W";
+      on-click = "battery-mode";
+    };
+
+    tray = {
+      spacing = 8;
+      icon-size = 16;
+    };
+  };
+
+  # Per-monitor workspace module. `all-outputs = false` means the bar only shows
+  # workspaces bound to *its* output, and `persistent-workspaces` keeps the boxes
+  # rendered even when empty.
+  workspacesFor = output: persistent: {
+    format = "{name}";
+    sort-by-number = true;
+    on-click = "activate";
+    all-outputs = false;
+    persistent-workspaces = persistent;
+  };
+in
 {
   programs.waybar = {
     enable = true;
@@ -12,136 +142,31 @@
       targets = [ "graphical-session.target" ];
     };
 
-    settings = {
-      mainBar = {
-        layer = "top";
-        position = "top";
-        height = 34;
-        spacing = 2;
-
-        modules-left = [ "hyprland/workspaces" "hyprland/window" ];
-        modules-center = [ "clock" ];
-        modules-right = [
-          "cpu"
-          "memory"
-          "temperature"
-          "backlight"
-          "pulseaudio"
-          "network"
-          "battery"
-          "custom/power"
-          "tray"
-        ];
-
-        "custom/power" = {
-          format = "⏻";
-          tooltip = false;
-          on-click = "hyprctl dispatch exit";
+    settings = [
+      # Laptop bar — workspaces 1–5
+      (commonBar // {
+        output = [ "eDP-1" ];
+        "hyprland/workspaces" = workspacesFor "eDP-1" {
+          "1" = [ "eDP-1" ];
+          "2" = [ "eDP-1" ];
+          "3" = [ "eDP-1" ];
+          "4" = [ "eDP-1" ];
+          "5" = [ "eDP-1" ];
         };
+      })
 
-        "hyprland/workspaces" = {
-          format = "{name}";
-          sort-by-number = true;
-          on-click = "activate";
-          all-outputs = true;
-          persistent-workspaces = {
-            "1" = [ ];
-            "2" = [ ];
-            "3" = [ ];
-            "4" = [ ];
-            "5" = [ ];
-          };
+      # External bar — workspaces 6–10
+      (commonBar // {
+        output = [ "HDMI-A-2" ];
+        "hyprland/workspaces" = workspacesFor "HDMI-A-2" {
+          "6"  = [ "HDMI-A-2" ];
+          "7"  = [ "HDMI-A-2" ];
+          "8"  = [ "HDMI-A-2" ];
+          "9"  = [ "HDMI-A-2" ];
+          "10" = [ "HDMI-A-2" ];
         };
-
-        "hyprland/window" = {
-          max-length = 60;
-          separate-outputs = true;
-          rewrite = {
-            "(.*) - Brave" = "$1";
-            "(.*) - Ghostty" = "$1";
-          };
-        };
-
-        clock = {
-          format = " {:%H:%M}";
-          format-alt = " {:%A %d %B %Y — %H:%M}";
-          tooltip-format = "<tt><small>{calendar}</small></tt>";
-          calendar = {
-            mode = "month";
-            on-scroll = 1;
-          };
-        };
-
-        cpu = {
-          format = "󰻠 {usage}%";
-          interval = 5;
-          tooltip = true;
-          on-click = "ghostty -e btop";
-        };
-
-        memory = {
-          format = "󰍛 {percentage}%";
-          interval = 10;
-          tooltip-format = "RAM: {used:0.1f}GB / {total:0.1f}GB";
-          on-click = "ghostty -e btop";
-        };
-
-        temperature = {
-          hwmon-path = "/sys/class/hwmon/hwmon6/temp1_input";
-          critical-threshold = 85;
-          format = " {temperatureC}°C";
-          tooltip = true;
-        };
-
-        backlight = {
-          device = "intel_backlight";
-          format = "{icon} {percent}%";
-          format-icons = [ "󰃞" "󰃟" "󰃠" ];
-          on-scroll-up = "brightnessctl set +5%";
-          on-scroll-down = "brightnessctl set 5%-";
-        };
-
-        pulseaudio = {
-          format = "{icon} {volume}%";
-          format-muted = "󰝟 muted";
-          format-icons = {
-            default = [ "󰕿" "󰖀" "󰕾" ];
-          };
-          on-click = "pavucontrol";
-          on-scroll-up = "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+";
-          on-scroll-down = "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-";
-          on-click-right = "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle";
-        };
-
-        network = {
-          format-wifi = "󰤨 {signalStrength}% {essid}";
-          format-ethernet = "󰈀 {bandwidthDownBytes}";
-          format-disconnected = "󰤭";
-          tooltip-format-wifi = "󰤨 {essid}\nIP: {ipaddr}\nStrength: {signalStrength}%\n⇣ {bandwidthDownBytes}  ⇡ {bandwidthUpBytes}";
-          tooltip-format-ethernet = "󰈀 {ifname}\nIP: {ipaddr}";
-          on-click = "ghostty -e nmtui";
-          interval = 10;
-        };
-
-        battery = {
-          states = {
-            warning = 30;
-            critical = 15;
-          };
-          format = "{icon} {capacity}%";
-          format-charging = "󰂄 {capacity}%";
-          format-plugged = "󰚥 {capacity}%";
-          format-icons = [ "󰂎" "󰁺" "󰁻" "󰁼" "󰁽" "󰁾" "󰁿" "󰂀" "󰂁" "󰂂" "󰁹" ];
-          tooltip-format = "{timeTo}\nPower: {power:.1f}W";
-          on-click = "battery-mode";
-        };
-
-        tray = {
-          spacing = 8;
-          icon-size = 16;
-        };
-      };
-    };
+      })
+    ];
 
     style = ''
       * {

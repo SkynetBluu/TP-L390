@@ -1,7 +1,7 @@
 # modules/system/hyprland.nix
 # Hyprland Wayland compositor — system-level config
 
-{ pkgs, inputs, ... }:
+{ config, pkgs, inputs, ... }:
 
 let
   # Pin Mesa to Hyprland's flake input to prevent FPS drops from version mismatch
@@ -26,10 +26,37 @@ in
   };
 
   # ── Display Manager ───────────────────────────────────────────────────────
-  services.displayManager.sddm = {
+  # greetd + tuigreet — minimal TTY-based greeter, no graphical compositor in
+  # the login path. Hyprland is the only Wayland session on the system.
+  #
+  # `--remember` pre-fills the username field after the first successful login.
+  # The cache dir (/var/cache/tuigreet, owned by user `greeter`) is set up by
+  # the NixOS module automatically.
+  #
+  # `uwsm start -eD Hyprland hyprland-uwsm.desktop` is the canonical UWSM
+  # launch command — using bare `Hyprland` triggers the "started without
+  # start-hyprland" warning since recent Hyprland versions.
+  services.greetd = {
     enable = true;
-    wayland.enable = true;
-    theme = "breeze";
+    settings = {
+      default_session = {
+        command = ''
+          ${pkgs.tuigreet}/bin/tuigreet \
+            --time \
+            --remember \
+            --remember-session \
+            --asterisks \
+            --sessions ${config.services.displayManager.sessionData.desktops}/share/wayland-sessions \
+            --cmd "uwsm start -eD Hyprland hyprland-uwsm.desktop"
+        '';
+        user = "greeter";
+      };
+      # Auto-login on boot — runs once, no password. Logout falls back to default_session.
+      initial_session = {
+        command = "uwsm start -eD Hyprland hyprland-uwsm.desktop";
+        user = "nimbus";
+      };
+    };
   };
 
   # ── XDG Portals ───────────────────────────────────────────────────────────

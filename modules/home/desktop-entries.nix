@@ -80,5 +80,13 @@ in
       type = "Application";
       categories = [ "System" "Utility" ];
     };
+
+    yazi-ghostty = {
+      name = "Yazi (Ghostty)";
+      exec = "ghostty -e yazi %U";
+      terminal = false;
+      mimeType = [ "inode/directory" ];
+      categories = [ "System" "FileManager" ];
+    };
   };
 }
