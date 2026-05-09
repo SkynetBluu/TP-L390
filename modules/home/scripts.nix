@@ -301,56 +301,219 @@ let
   # graphical session cleanly.
 
   power-menu = pkgs.writeShellScriptBin "power-menu" ''
+        set -euo pipefail
+
+        ROFI="${pkgs.rofi}/bin/rofi"
+
+        # Step 1: action picker. Search field hidden — pick by arrow keys/click only.
+        OPTIONS="󰌾  Lock
+    󰍃  Logout
+    󰒲  Suspend
+    󰜉  Reboot
+    󰐥  Shutdown"
+
+        CHOICE=$(printf '%s\n' "$OPTIONS" | "$ROFI" \
+          -dmenu \
+          -p "󰐥 Power" \
+          -no-custom \
+          -theme-str 'window {width: 280px;}' \
+          -theme-str 'listview {lines: 5; scrollbar: false; fixed-height: true;}' \
+          -theme-str 'entry {enabled: false;}' \
+          -theme-str 'textbox-prompt-colon {enabled: false;}' \
+          || true)
+
+        [ -z "$CHOICE" ] && exit 0
+
+        # Strip leading icon + spaces to get the bare action name
+        ACTION=$(printf '%s' "$CHOICE" | ${pkgs.gnused}/bin/sed 's/^[^ ]*  *//')
+
+        # Lock is harmless — fire immediately, skip confirmation.
+        if [ "$ACTION" = "Lock" ]; then
+          exec loginctl lock-session
+        fi
+
+        # Step 2: confirm everything else. "No" first so accidental Enter cancels.
+        CONFIRM=$(printf 'No\nYes' | "$ROFI" \
+          -dmenu \
+          -p "$ACTION?" \
+          -no-custom \
+          -theme-str 'window {width: 240px;}' \
+          -theme-str 'listview {lines: 2; scrollbar: false; fixed-height: true;}' \
+          -theme-str 'entry {enabled: false;}' \
+          -theme-str 'textbox-prompt-colon {enabled: false;}' \
+          || true)
+
+        [ "$CONFIRM" != "Yes" ] && exit 0
+
+        case "$ACTION" in
+          Logout)   exec ${pkgs.uwsm}/bin/uwsm stop ;;
+          Suspend)  exec systemctl suspend ;;
+          Reboot)   exec systemctl reboot ;;
+          Shutdown) exec systemctl poweroff ;;
+        esac
+  '';
+
+  # ── USB disk manager ─────────────────────────────────────────────────────
+
+  usb-menu = pkgs.writeShellScriptBin "usb-menu" ''
     set -euo pipefail
 
-    ROFI="${pkgs.rofi}/bin/rofi"
+    WOFI="${pkgs.wofi}/bin/wofi"
+    JQ="${pkgs.jq}/bin/jq"
+    LSBLK="${pkgs.util-linux}/bin/lsblk"
+    UDISKSCTL="${pkgs.udisks2}/bin/udisksctl"
+    NOTIFY="${pkgs.libnotify}/bin/notify-send"
 
-    # Step 1: action picker. Search field hidden — pick by arrow keys/click only.
-    OPTIONS="󰌾  Lock
-󰍃  Logout
-󰒲  Suspend
-󰜉  Reboot
-󰐥  Shutdown"
+    refresh_waybar() { ${pkgs.procps}/bin/pkill -RTMIN+8 waybar 2>/dev/null || true; }
 
-    CHOICE=$(printf '%s\n' "$OPTIONS" | "$ROFI" \
-      -dmenu \
-      -p "󰐥 Power" \
-      -no-custom \
-      -theme-str 'window {width: 280px;}' \
-      -theme-str 'listview {lines: 5; scrollbar: false; fixed-height: true;}' \
-      -theme-str 'entry {enabled: false;}' \
-      -theme-str 'textbox-prompt-colon {enabled: false;}' \
-      || true)
+    # Discover USB partitions: device | size | label | fstype | mountpoint
+    ENTRIES=$(
+      $LSBLK -J -p -o NAME,TYPE,TRAN,SIZE,MOUNTPOINT,LABEL,FSTYPE 2>/dev/null \
+        | $JQ -r '
+            .blockdevices[]
+            | select(.type == "disk" and .tran == "usb")
+            | (.children // [])[]
+            | select(.type == "part")
+            | "\(.name)|\(.size)|\(.label // "(no label)")|\(.fstype // "?")|\(.mountpoint // "")"'
+    )
 
-    [ -z "$CHOICE" ] && exit 0
-
-    # Strip leading icon + spaces to get the bare action name
-    ACTION=$(printf '%s' "$CHOICE" | ${pkgs.gnused}/bin/sed 's/^[^ ]*  *//')
-
-    # Lock is harmless — fire immediately, skip confirmation.
-    if [ "$ACTION" = "Lock" ]; then
-      exec loginctl lock-session
+    if [ -z "$ENTRIES" ]; then
+      $NOTIFY -t 2000 "USB" "No USB partitions detected" -i "drive-removable-media"
+      exit 0
     fi
 
-    # Step 2: confirm everything else. "No" first so accidental Enter cancels.
-    CONFIRM=$(printf 'No\nYes' | "$ROFI" \
-      -dmenu \
-      -p "$ACTION?" \
-      -no-custom \
-      -theme-str 'window {width: 240px;}' \
-      -theme-str 'listview {lines: 2; scrollbar: false; fixed-height: true;}' \
-      -theme-str 'entry {enabled: false;}' \
-      -theme-str 'textbox-prompt-colon {enabled: false;}' \
-      || true)
+    # Build menu lines. Embed the device path at the start, hidden behind
+    # a separator we strip after selection. Format:
+    #   <dev>|<icon>  <label>   <size> <fstype>   <status>
+    MENU=""
+    while IFS='|' read -r dev size label fstype mount; do
+      if [ -n "$mount" ]; then
+        MENU="$MENU$dev|●  $label   $size $fstype   →  $mount"$'\n'
+      else
+        MENU="$MENU$dev|○  $label   $size $fstype   (not mounted)"$'\n'
+      fi
+    done <<< "$ENTRIES"
+    MENU="''${MENU%$'\n'}"
 
-    [ "$CONFIRM" != "Yes" ] && exit 0
+    # Show menu — but hide the device path column. wofi shows lines as-is, so
+    # we feed it just the visible part and look up the device by line number.
+    VISIBLE=$(printf '%s\n' "$MENU" | ${pkgs.gnused}/bin/sed 's/^[^|]*|//')
+
+    CHOSEN=$(printf '%s\n' "$VISIBLE" | "$WOFI" --dmenu --prompt "USB" --width 600 --height 300) || exit 0
+
+    # Map back: find the matching line in $MENU
+    LINE=$(printf '%s\n' "$MENU" | ${pkgs.gnugrep}/bin/grep -F "|$CHOSEN" | head -1)
+    DEV=$(printf '%s' "$LINE" | ${pkgs.gawk}/bin/awk -F'|' '{print $1}')
+
+    # Re-extract details for the chosen device
+    DETAILS=$(printf '%s\n' "$ENTRIES" | ${pkgs.gnugrep}/bin/grep "^$DEV|" | head -1)
+    IFS='|' read -r _ SIZE LABEL FSTYPE MOUNT <<< "$DETAILS"
+
+    # Action menu — different choices depending on mount state
+    if [ -n "$MOUNT" ]; then
+      ACTIONS="Open in Nemo"$'\n'"Unmount"$'\n'"Eject (unmount + power off)"$'\n'"Cancel"
+    else
+      ACTIONS="Mount"$'\n'"Mount and open"$'\n'"Do not mount"$'\n'"Cancel"
+    fi
+
+    ACTION=$(printf '%s\n' "$ACTIONS" | "$WOFI" --dmenu --prompt "$LABEL" --width 400 --height 200) || exit 0
 
     case "$ACTION" in
-      Logout)   exec ${pkgs.uwsm}/bin/uwsm stop ;;
-      Suspend)  exec systemctl suspend ;;
-      Reboot)   exec systemctl reboot ;;
-      Shutdown) exec systemctl poweroff ;;
+      "Mount")
+        OUT=$($UDISKSCTL mount -b "$DEV" 2>&1) || {
+          $NOTIFY -u critical -t 4000 "Mount failed: $LABEL" "$OUT" -i "dialog-error"
+          exit 1
+        }
+        MP=$(printf '%s' "$OUT" | ${pkgs.gnugrep}/bin/grep -oP 'at \K[^.]+' | ${pkgs.gnused}/bin/sed 's/[[:space:]]*$//')
+        $NOTIFY -t 3000 "Mounted $LABEL" "$MP" -i "drive-removable-media"
+        refresh_waybar
+        ;;
+      "Mount and open")
+        OUT=$($UDISKSCTL mount -b "$DEV" 2>&1) || {
+          $NOTIFY -u critical -t 4000 "Mount failed: $LABEL" "$OUT" -i "dialog-error"
+          exit 1
+        }
+        MP=$(printf '%s' "$OUT" | ${pkgs.gnugrep}/bin/grep -oP 'at \K[^.]+' | ${pkgs.gnused}/bin/sed 's/[[:space:]]*$//')
+        $NOTIFY -t 3000 "Mounted $LABEL" "$MP" -i "drive-removable-media"
+        refresh_waybar
+        nemo "$MP" >/dev/null 2>&1 &
+        disown
+        ;;
+      "Open in Nemo")
+        nemo "$MOUNT" >/dev/null 2>&1 &
+        disown
+        ;;
+      "Unmount")
+        OUT=$($UDISKSCTL unmount -b "$DEV" 2>&1) || {
+          $NOTIFY -u critical -t 4000 "Unmount failed: $LABEL" "$OUT" -i "dialog-error"
+          exit 1
+        }
+        $NOTIFY -t 2000 "Unmounted $LABEL" "" -i "media-eject"
+        refresh_waybar
+        ;;
+      "Eject (unmount + power off)")
+        OUT=$($UDISKSCTL unmount -b "$DEV" 2>&1) || {
+          $NOTIFY -u critical -t 4000 "Unmount failed: $LABEL" "$OUT" -i "dialog-error"
+          exit 1
+        }
+        PARENT="/dev/$($LSBLK -no PKNAME "$DEV" | head -1)"
+        $UDISKSCTL power-off -b "$PARENT" >/dev/null 2>&1 || true
+        $NOTIFY -t 3000 "Ejected $LABEL" "Safe to remove" -i "media-eject"
+        refresh_waybar
+        ;;
+      *)
+        exit 0
+        ;;
     esac
+  '';
+
+  usb-monitor = pkgs.writeShellScriptBin "usb-monitor" ''
+    set -uo pipefail
+
+    GDBUS="${pkgs.glib}/bin/gdbus"
+    LSBLK="${pkgs.util-linux}/bin/lsblk"
+    NOTIFY="${pkgs.libnotify}/bin/notify-send"
+    USB_MENU="${usb-menu}/bin/usb-menu"
+
+    refresh_waybar() { ${pkgs.procps}/bin/pkill -RTMIN+8 waybar 2>/dev/null || true; }
+
+    $GDBUS monitor --system --dest org.freedesktop.UDisks2 2>/dev/null \
+      | while read -r line; do
+        case "$line" in
+          *InterfacesAdded*block_devices*)
+            path=$(printf '%s' "$line" | ${pkgs.gnugrep}/bin/grep -oE '/org/freedesktop/UDisks2/block_devices/[a-zA-Z0-9_]+' | head -1)
+            [ -z "$path" ] && continue
+            devname="''${path##*/}"
+            # Only act on partitions (sdb1), not whole disks (sdb)
+            [[ "$devname" =~ [0-9]$ ]] || continue
+            # Settle: udev needs a moment to populate fs properties
+            sleep 1
+            # Filter to USB only
+            tran=$($LSBLK -no TRAN "/dev/$devname" 2>/dev/null | head -1)
+            [ "$tran" = "usb" ] || continue
+
+            label=$($LSBLK -no LABEL "/dev/$devname" 2>/dev/null | head -1)
+            size=$($LSBLK -no SIZE "/dev/$devname" 2>/dev/null | head -1)
+            [ -z "$label" ] && label="(no label)"
+
+            # Actionable notification — clicking "Mount…" launches usb-menu
+            ACTION=$($NOTIFY -i drive-removable-media -t 8000 \
+              --wait \
+              --action="open=Mount…" \
+              "USB inserted: $label" "$size — click to manage" || echo "")
+
+            if [ "$ACTION" = "open" ]; then
+              "$USB_MENU" &
+              disown
+            fi
+            refresh_waybar
+            ;;
+          *InterfacesRemoved*block_devices*)
+            $NOTIFY -i media-removable -t 3000 "USB removed" ""
+            refresh_waybar
+            ;;
+        esac
+      done
   '';
 
   # ── hypr-current-workspace-launch ────────────────────────────────────────
@@ -387,6 +550,8 @@ in
     sysinfo-panel
     power-menu
     hypr-current-workspace-launch
+    usb-menu
+    usb-monitor
     # Runtime deps for scripts
     pkgs.hyprsunset
     pkgs.upower
@@ -400,6 +565,9 @@ in
     pkgs.gnused
     pkgs.findutils
     pkgs.jq
+    pkgs.util-linux
+    pkgs.udisks2
+    pkgs.glib
   ];
 
   # Start perf-mode-daemon and bluelight-auto at login
@@ -408,4 +576,20 @@ in
     Service = { ExecStart = "${perf-mode-daemon}/bin/perf-mode-daemon"; Restart = "on-failure"; };
     Install = { WantedBy = [ "graphical-session.target" ]; };
   };
+
+
+  systemd.user.services.usb-monitor = {
+    Unit = {
+      Description = "USB insertion monitor → notifications";
+      After = [ "graphical-session.target" ];
+      PartOf = [ "graphical-session.target" ];
+    };
+    Service = {
+      ExecStart = "${usb-monitor}/bin/usb-monitor";
+      Restart = "on-failure";
+      RestartSec = 5;
+    };
+    Install = { WantedBy = [ "graphical-session.target" ]; };
+  };
+
 }

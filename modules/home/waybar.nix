@@ -22,6 +22,7 @@ let
       "backlight"
       "pulseaudio"
       "network"
+      "custom/usb"
       "battery"
       "custom/power"
       "tray"
@@ -32,6 +33,82 @@ let
       tooltip = true;
       tooltip-format = "Power menu";
       on-click = "power-menu";
+    };
+
+    "custom/usb" = {
+      exec = toString (pkgs.writeShellScript "waybar-usb" ''
+        source "$HOME/.config/waybar/scripts/theme-colors.sh" 2>/dev/null || {
+          C_FG="${theme.colors.foreground}"
+          C_DIM="${theme.colors.comment}"
+          C_ACCENT="${theme.colors.accent}"
+          C_GREEN="${theme.colors.green}"
+        }
+
+        pango_escape() {
+          printf '%s' "$1" | ${pkgs.gnused}/bin/sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g; s/"/\&quot;/g'
+        }
+
+        json_output() {
+          local class="''${3:-empty}"
+          local tooltip="''${2//\\n/$'\n'}"
+          ${pkgs.jq}/bin/jq -cn \
+            --arg text "$1" \
+            --arg tooltip "$tooltip" \
+            --arg class "$class" \
+            '{text: $text, tooltip: $tooltip, class: $class}'
+        }
+
+        mapfile -t devices < <(
+          ${pkgs.util-linux}/bin/lsblk -J -p -o NAME,TYPE,TRAN,SIZE,MOUNTPOINT,LABEL,FSTYPE 2>/dev/null \
+            | ${pkgs.jq}/bin/jq -r '
+                .blockdevices[]
+                | select(.type == "disk" and .tran == "usb")
+                | (.children // [])[]
+                | select(.type == "part")
+                | [.name, .size, (.mountpoint // ""), (.label // ""), (.fstype // "")]
+                | @tsv' 2>/dev/null
+        )
+
+        if [ "''${#devices[@]}" -eq 0 ]; then
+          json_output "" "No USB disks" "empty"
+          exit 0
+        fi
+
+        count=''${#devices[@]}
+        tooltip="<span color='$C_ACCENT'><b>󰕓 USB DISKS ($count)</b></span>\n"
+
+        for line in "''${devices[@]}"; do
+          IFS=$'\t' read -r name size mount label fstype <<< "$line"
+          mount_raw="$mount"
+          [ -z "$label" ] && label="$(${pkgs.coreutils}/bin/basename -- "$name")"
+
+          label=$(pango_escape "$label")
+          mount=$(pango_escape "$mount")
+          fstype=$(pango_escape "$fstype")
+          size=$(pango_escape "$size")
+
+          if [ -n "$mount_raw" ]; then
+            usage=$(${pkgs.coreutils}/bin/df -h -- "$mount_raw" 2>/dev/null \
+              | ${pkgs.gawk}/bin/awk 'NR==2{print $3 "/" $2 " (" $5 ")"}')
+            usage=$(pango_escape "$usage")
+            tooltip="$tooltip\n<span color='$C_GREEN'>●</span> <span color='$C_FG'><b>$label</b></span> <span color='$C_DIM'>$size $fstype</span>"
+            tooltip="$tooltip\n  <span color='$C_DIM'>$mount</span>"
+            [ -n "$usage" ] && tooltip="$tooltip\n  <span color='$C_DIM'>Used:</span> <span color='$C_FG'>$usage</span>"
+          else
+            tooltip="$tooltip\n<span color='$C_DIM'>○ $label  $size $fstype (not mounted)</span>"
+          fi
+        done
+
+        tooltip="$tooltip\n\n<span color='$C_DIM'>Click: Manage  •  Right: Eject all</span>"
+
+        json_output "󰕓 $count" "$tooltip" "attached"
+      '');
+      return-type = "json";
+      interval = "once";
+      signal = 8;
+      on-click = "usb-menu";
+      on-click-right = "usb-menu";
+      tooltip = true;
     };
 
     "hyprland/window" = {
@@ -250,6 +327,18 @@ in
       }
 
       /* States */
+
+      #custom-usb.empty {
+        /* Hide entirely when no USB drives are attached */
+        padding: 0;
+        margin: 0;
+        font-size: 0;
+      }
+
+      #custom-usb.attached {
+        color: ${theme.colors.accent};
+      }
+      
       #battery.charging { color: ${theme.colors.green}; }
       #battery.warning:not(.charging) { color: ${theme.colors.orange}; }
       #battery.critical:not(.charging) {

@@ -44,6 +44,9 @@
     lazygit
     kicad
     helix
+    nemo-with-extensions
+    ffmpegthumbnailer        # video thumbnails
+    webp-pixbuf-loader       # webp image previews
   ];
 
   # ── Git ───────────────────────────────────────────────────────────────────
@@ -382,9 +385,23 @@
         "image/gif" = "imv.desktop";
         "x-scheme-handler/http" = "brave-browser.desktop";
         "x-scheme-handler/https" = "brave-browser.desktop";
-        "inode/directory" = "yazi-ghostty.desktop";
+        # "inode/directory" = "yazi-ghostty.desktop";
+        "inode/directory" = "nemo.desktop";
+        "application/x-gnome-saved-search" = "nemo.desktop";
       };
     };
+
+    configFile."waybar/scripts/theme-colors.sh".text = ''
+      # Generated from modules/home/theme.nix — do not edit by hand
+      C_FG="${theme.colors.foreground}"
+      C_DIM="${theme.colors.comment}"
+      C_ACCENT="${theme.colors.accent}"
+      C_GREEN="${theme.colors.green}"
+      C_RED="${theme.colors.red}"
+      C_YELLOW="${theme.colors.yellow}"
+      C_ORANGE="${theme.colors.orange}"
+      C_BLUE="${theme.colors.blue}"
+    '';
 
     userDirs = {
       enable = true;

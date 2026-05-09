@@ -94,6 +94,22 @@ in
   # ── Security ──────────────────────────────────────────────────────────────
   security.polkit.enable = true;
 
+  # ── Removable storage ────────────────────────────────────────────────────
+  services.udisks2.enable = true;
+  services.gvfs.enable = true;
+
+  # Force noexec/nosuid/nodev on USB mounts — defense-in-depth against
+  # malicious removable media. udisks2 already adds nosuid/nodev for
+  # removable devices by default, but noexec is not on by default.
+  environment.etc."udisks2/mount_options.conf".text = ''
+    [defaults]
+    vfat_defaults=uid=$UID,gid=$GID,shortname=mixed,utf8=1,showexec,flush,noexec,nosuid,nodev
+    ntfs_defaults=uid=$UID,gid=$GID,windows_names,noexec,nosuid,nodev
+    exfat_defaults=uid=$UID,gid=$GID,errors=remount-ro,noexec,nosuid,nodev
+    ext4_defaults=noexec,nosuid,nodev
+    btrfs_defaults=noexec,nosuid,nodev
+  '';
+
   # ── Suspend / resume fix ──────────────────────────────────────────────────
   # Freeze Hyprland before suspend to prevent GPU access during s2idle
   # Prevents SEGV crashes on resume from stale DRM/GPU state
