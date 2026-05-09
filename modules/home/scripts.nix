@@ -292,7 +292,9 @@ let
 
 
   # ── Power menu ───────────────────────────────────────────────────────────
-  # Rofi-based power menu invoked from waybar. Two-step: pick action, confirm.
+  # Rofi-based power menu invoked from waybar. Two-step (pick action, confirm)
+  # for everything except Lock, which fires immediately — locking is harmless
+  # and the friction isn't worth it.
   # Logout uses `uwsm stop` (canonical under UWSM — `hyprctl dispatch exit`
   # is discouraged with UWSM and can leave a black screen).
   # Suspend/reboot/poweroff go through systemctl so systemd brings down the
@@ -303,7 +305,7 @@ let
 
     ROFI="${pkgs.rofi}/bin/rofi"
 
-    # Step 1: action picker
+    # Step 1: action picker. Search field hidden — pick by arrow keys/click only.
     OPTIONS="󰌾  Lock
 󰍃  Logout
 󰒲  Suspend
@@ -312,10 +314,12 @@ let
 
     CHOICE=$(printf '%s\n' "$OPTIONS" | "$ROFI" \
       -dmenu \
-      -i \
       -p "󰐥 Power" \
+      -no-custom \
       -theme-str 'window {width: 280px;}' \
       -theme-str 'listview {lines: 5; scrollbar: false; fixed-height: true;}' \
+      -theme-str 'entry {enabled: false;}' \
+      -theme-str 'textbox-prompt-colon {enabled: false;}' \
       || true)
 
     [ -z "$CHOICE" ] && exit 0
@@ -323,19 +327,25 @@ let
     # Strip leading icon + spaces to get the bare action name
     ACTION=$(printf '%s' "$CHOICE" | ${pkgs.gnused}/bin/sed 's/^[^ ]*  *//')
 
-    # Step 2: confirm. "No" first so accidental Enter cancels.
+    # Lock is harmless — fire immediately, skip confirmation.
+    if [ "$ACTION" = "Lock" ]; then
+      exec loginctl lock-session
+    fi
+
+    # Step 2: confirm everything else. "No" first so accidental Enter cancels.
     CONFIRM=$(printf 'No\nYes' | "$ROFI" \
       -dmenu \
-      -i \
       -p "$ACTION?" \
+      -no-custom \
       -theme-str 'window {width: 240px;}' \
       -theme-str 'listview {lines: 2; scrollbar: false; fixed-height: true;}' \
+      -theme-str 'entry {enabled: false;}' \
+      -theme-str 'textbox-prompt-colon {enabled: false;}' \
       || true)
 
     [ "$CONFIRM" != "Yes" ] && exit 0
 
     case "$ACTION" in
-      Lock)     exec loginctl lock-session ;;
       Logout)   exec ${pkgs.uwsm}/bin/uwsm stop ;;
       Suspend)  exec systemctl suspend ;;
       Reboot)   exec systemctl reboot ;;
