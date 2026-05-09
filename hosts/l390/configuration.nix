@@ -148,6 +148,42 @@
   services.fwupd.enable = true;
   services.smartd.enable = true;
 
+  # ── Services ── slskd ─────────────────────────────────────────────────────
+  users.users.nimbus.extraGroups = [ "slskd" ];
+
+  systemd.tmpfiles.rules = [
+    "d /share                   0755 root  root  - -"
+    "d /share/slskd             0755 slskd slskd - -"
+    "d /share/slskd/share       2775 slskd slskd - -"
+    "d /share/slskd/downloads   2775 slskd slskd - -"
+    "d /share/slskd/incomplete  2775 slskd slskd - -"
+  ];
+
+  services.slskd = {
+    enable = true;
+    openFirewall = true;
+    environmentFile = "/etc/slskd/secrets.env";
+
+    settings = {
+      remote_configuration = false;
+
+      soulseek = {
+        description = "slskd on NixOS";
+        listen_port = 50300;
+      };
+
+      directories = {
+        downloads = "/share/slskd/downloads";
+        incomplete = "/share/slskd/incomplete";
+      };
+
+      shares.directories = [ "/share/slskd/share" ];
+
+      web.port = 5030;
+    };
+  };
+
+
   # ── Secrets (sops-nix) ────────────────────────────────────────────────────
   # Configure after first boot once SSH host key exists:
   #
