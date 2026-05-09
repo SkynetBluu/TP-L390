@@ -6,6 +6,10 @@
 let
   hyprlandPkg = inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.hyprland;
 
+  # Single source of truth for the rofi binary — change this in one place
+  # to swap launchers (e.g. back to pkgs.rofi, or to a fork).
+  rofiBin = "${pkgs.rofi-wayland}/bin/rofi";
+
   # ── Blue light filter ────────────────────────────────────────────────────
 
   bluelight-toggle = pkgs.writeShellScriptBin "bluelight-toggle" ''
@@ -163,58 +167,129 @@ let
 
   wifi-manage = pkgs.writeShellScriptBin "wifi-manage" ''
     set -euo pipefail
+
+    ROFI="${rofiBin}"
+    NOTIFY="${pkgs.libnotify}/bin/notify-send"
+
     ACTION="''${1:-toggle}"
     case "$ACTION" in
       toggle)
         STATUS=$(nmcli radio wifi)
         if [ "$STATUS" = "enabled" ]; then
           nmcli radio wifi off
-          ${pkgs.libnotify}/bin/notify-send -t 2000 "WiFi" "󰤭  Disabled" -i "network-wireless-offline"
+          "$NOTIFY" -t 2000 "WiFi" "󰤭  Disabled" -i "network-wireless-offline"
         else
           nmcli radio wifi on
-          ${pkgs.libnotify}/bin/notify-send -t 2000 "WiFi" "󰤨  Enabled" -i "network-wireless"
+          "$NOTIFY" -t 2000 "WiFi" "󰤨  Enabled" -i "network-wireless"
         fi
         ;;
       reconnect)
-        ${pkgs.libnotify}/bin/notify-send -t 2000 "WiFi" "󰤩  Reconnecting..." -i "network-wireless-acquiring"
+        "$NOTIFY" -t 2000 "WiFi" "󰤩  Reconnecting..." -i "network-wireless-acquiring"
         nmcli radio wifi off && sleep 1 && nmcli radio wifi on && sleep 3
-        if nmcli -t -f STATE general | grep -q "connected"; then
-          SSID=$(nmcli -t -f ACTIVE,SSID dev wifi | grep "^yes" | cut -d: -f2)
-          ${pkgs.libnotify}/bin/notify-send -t 3000 "WiFi" "󰤨  Connected to $SSID" -i "network-wireless"
+        if nmcli -t -f STATE general | ${pkgs.gnugrep}/bin/grep -q "connected"; then
+          SSID=$(nmcli -t -f ACTIVE,SSID dev wifi | ${pkgs.gnugrep}/bin/grep "^yes" | cut -d: -f2)
+          "$NOTIFY" -t 3000 "WiFi" "󰤨  Connected to $SSID" -i "network-wireless"
         else
-          ${pkgs.libnotify}/bin/notify-send -t 3000 "WiFi" "󰤭  Not connected" -i "network-wireless-offline"
+          "$NOTIFY" -t 3000 "WiFi" "󰤭  Not connected" -i "network-wireless-offline"
         fi
         ;;
       scan)
-        ${pkgs.libnotify}/bin/notify-send -t 1500 "WiFi" "󰤩  Scanning..." -i "network-wireless-acquiring"
+        "$NOTIFY" -t 1500 "WiFi" "󰤩  Scanning..." -i "network-wireless-acquiring"
         nmcli radio wifi on 2>/dev/null || true && sleep 1
-        NETWORKS=$(nmcli -t -f SIGNAL,SECURITY,SSID dev wifi list --rescan yes 2>/dev/null | \
-          ${pkgs.gawk}/bin/awk -F: 'NF>=3 && $3!="" {
-            sig=$1; sec=$2; ssid=$3;
-            icon=(sig+0>=75)?"󰤨":(sig+0>=50)?"󰤥":(sig+0>=25)?"󰤢":"󰤟";
-            lock=(sec!=""&&sec!="--")?"󰌾":"󰌿";
-            if(!seen[ssid]++) printf "%s %s %s (%s%%)\n",icon,lock,ssid,sig}')
-        if [ -z "$NETWORKS" ]; then
-          ${pkgs.libnotify}/bin/notify-send -t 3000 "WiFi" "No networks found" -i "network-wireless-offline"
+
+        # Build two parallel arrays:
+        #   DISPLAY[i] — what rofi shows the user (icon + lock + ssid + signal)
+        #   SSIDS[i]   — the corresponding bare SSID
+        # nmcli output is colon-separated; backslash-escape any colons in SSIDs (`-e no` keeps them literal).
+        SCAN=$(nmcli -t -e no -f SIGNAL,SECURITY,SSID dev wifi list --rescan yes 2>/dev/null)
+
+        if [ -z "$SCAN" ]; then
+          "$NOTIFY" -t 3000 "WiFi" "No networks found" -i "network-wireless-offline"
           exit 1
         fi
-        CHOSEN=$(echo "$NETWORKS" | ${pkgs.wofi}/bin/wofi --dmenu --prompt "WiFi Network" --width 400 --height 300) || exit 0
-        SSID=$(echo "$CHOSEN" | ${pkgs.gnused}/bin/sed 's/^[^ ]* [^ ]* //' | ${pkgs.gnused}/bin/sed 's/ ([0-9]*%)$//')
-        if nmcli -t -f NAME connection show | grep -qx "$SSID"; then
-          nmcli connection up "$SSID" && \
-            ${pkgs.libnotify}/bin/notify-send -t 3000 "WiFi" "󰤨  Connected to $SSID" -i "network-wireless" || \
-            ${pkgs.libnotify}/bin/notify-send -t 3000 "WiFi" "󰤭  Failed" -i "network-wireless-offline"
-        else
-          SECURITY=$(nmcli -t -f SSID,SECURITY dev wifi list | grep "^$SSID:" | head -1 | cut -d: -f2)
-          if [ -n "$SECURITY" ] && [ "$SECURITY" != "--" ]; then
-            PASSWORD=$(echo "" | ${pkgs.wofi}/bin/wofi --dmenu --prompt "Password for $SSID" --password --width 400 --height 100) || exit 0
-            nmcli device wifi connect "$SSID" password "$PASSWORD" && \
-              ${pkgs.libnotify}/bin/notify-send -t 3000 "WiFi" "󰤨  Connected to $SSID" -i "network-wireless" || \
-              ${pkgs.libnotify}/bin/notify-send -t 3000 "WiFi" "󰤭  Wrong password?" -i "network-wireless-offline"
+
+        DISPLAY=""
+        SSIDS=()
+        seen=""
+        while IFS= read -r line; do
+          [ -z "$line" ] && continue
+          # Split on first two colons; rest is the SSID (may contain colons).
+          sig="''${line%%:*}"
+          rest="''${line#*:}"
+          sec="''${rest%%:*}"
+          ssid="''${rest#*:}"
+          [ -z "$ssid" ] && continue
+          # Dedupe SSIDs (multiple BSSIDs report separately)
+          case " $seen " in *" $ssid "*) continue ;; esac
+          seen="$seen $ssid"
+
+          if [ "$sig" -ge 75 ]; then icon="󰤨"
+          elif [ "$sig" -ge 50 ]; then icon="󰤥"
+          elif [ "$sig" -ge 25 ]; then icon="󰤢"
+          else icon="󰤟"
+          fi
+          if [ -n "$sec" ] && [ "$sec" != "--" ]; then lock="󰌾"; else lock="󰌿"; fi
+
+          DISPLAY="$DISPLAY$icon $lock $ssid ($sig%)"$'\n'
+          SSIDS+=("$ssid")
+        done <<< "$SCAN"
+
+        DISPLAY="''${DISPLAY%$'\n'}"
+
+        if [ "''${#SSIDS[@]}" -eq 0 ]; then
+          "$NOTIFY" -t 3000 "WiFi" "No networks found" -i "network-wireless-offline"
+          exit 1
+        fi
+
+        IDX=$(printf '%s\n' "$DISPLAY" | "$ROFI" \
+          -dmenu \
+          -i \
+          -p "WiFi" \
+          -format i \
+          -no-custom \
+          -theme-str 'window {width: 480px;}' \
+          -theme-str 'listview {lines: 8; scrollbar: false;}' \
+          -theme-str 'textbox-prompt-colon {enabled: false;}' \
+          || true)
+
+        [ -z "$IDX" ] && exit 0
+        SSID="''${SSIDS[$IDX]}"
+
+        # Already saved → just connect by name
+        if nmcli -t -f NAME connection show | ${pkgs.gnugrep}/bin/grep -qx "$SSID"; then
+          if nmcli connection up "$SSID" >/dev/null 2>&1; then
+            "$NOTIFY" -t 3000 "WiFi" "󰤨  Connected to $SSID" -i "network-wireless"
           else
-            nmcli device wifi connect "$SSID" && \
-              ${pkgs.libnotify}/bin/notify-send -t 3000 "WiFi" "󰤨  Connected to $SSID (open)" -i "network-wireless" || \
-              ${pkgs.libnotify}/bin/notify-send -t 3000 "WiFi" "󰤭  Failed" -i "network-wireless-offline"
+            "$NOTIFY" -t 3000 "WiFi" "󰤭  Failed" -i "network-wireless-offline"
+          fi
+          exit 0
+        fi
+
+        # Find security level for this SSID
+        SECURITY=$(nmcli -t -e no -f SSID,SECURITY dev wifi list | ${pkgs.gnugrep}/bin/grep -F "$SSID:" | head -1 | ${pkgs.gnused}/bin/sed "s/^$SSID://")
+
+        if [ -n "$SECURITY" ] && [ "$SECURITY" != "--" ]; then
+          # rofi -password masks input with bullets
+          PASSWORD=$("$ROFI" \
+            -dmenu \
+            -password \
+            -p "Password for $SSID" \
+            -theme-str 'window {width: 480px;}' \
+            -theme-str 'listview {enabled: false;}' \
+            -theme-str 'textbox-prompt-colon {enabled: false;}' \
+            < /dev/null \
+            || true)
+          [ -z "$PASSWORD" ] && exit 0
+          if nmcli device wifi connect "$SSID" password "$PASSWORD" >/dev/null 2>&1; then
+            "$NOTIFY" -t 3000 "WiFi" "󰤨  Connected to $SSID" -i "network-wireless"
+          else
+            "$NOTIFY" -t 3000 "WiFi" "󰤭  Wrong password?" -i "network-wireless-offline"
+          fi
+        else
+          if nmcli device wifi connect "$SSID" >/dev/null 2>&1; then
+            "$NOTIFY" -t 3000 "WiFi" "󰤨  Connected to $SSID (open)" -i "network-wireless"
+          else
+            "$NOTIFY" -t 3000 "WiFi" "󰤭  Failed" -i "network-wireless-offline"
           fi
         fi
         ;;
@@ -239,7 +314,6 @@ let
 
   # ── System info ──────────────────────────────────────────────────────────
 
-  # ── System info ──────────────────────────────────────────────────────────
   sysinfo-panel = pkgs.writeShellScriptBin "sysinfo-panel" ''
     set -euo pipefail
     HOSTNAME=$(hostname)
@@ -277,8 +351,8 @@ let
     󰖩   Network     $NET_IP ($NET_IFACE)
     󰖨   Filter      $BLUELIGHT
     EOF
-    
-    ${pkgs.rofi}/bin/rofi \
+
+    ${rofiBin} \
       -dmenu \
       -p "󰋊 System" \
       -input "$TMPFILE" \
@@ -287,9 +361,7 @@ let
       -theme-str 'entry {enabled: false;}' \
       -theme-str 'textbox-prompt-colon {enabled: false;}' \
       || true
-
   '';
-
 
   # ── Power menu ───────────────────────────────────────────────────────────
   # Rofi-based power menu invoked from waybar. Two-step (pick action, confirm)
@@ -301,56 +373,56 @@ let
   # graphical session cleanly.
 
   power-menu = pkgs.writeShellScriptBin "power-menu" ''
-        set -euo pipefail
+    set -euo pipefail
 
-        ROFI="${pkgs.rofi}/bin/rofi"
+    ROFI="${rofiBin}"
 
-        # Step 1: action picker. Search field hidden — pick by arrow keys/click only.
-        OPTIONS="󰌾  Lock
-    󰍃  Logout
-    󰒲  Suspend
-    󰜉  Reboot
-    󰐥  Shutdown"
+    # Step 1: action picker. Search field hidden — pick by arrow keys/click only.
+    OPTIONS="󰌾  Lock
+󰍃  Logout
+󰒲  Suspend
+󰜉  Reboot
+󰐥  Shutdown"
 
-        CHOICE=$(printf '%s\n' "$OPTIONS" | "$ROFI" \
-          -dmenu \
-          -p "󰐥 Power" \
-          -no-custom \
-          -theme-str 'window {width: 280px;}' \
-          -theme-str 'listview {lines: 5; scrollbar: false; fixed-height: true;}' \
-          -theme-str 'entry {enabled: false;}' \
-          -theme-str 'textbox-prompt-colon {enabled: false;}' \
-          || true)
+    CHOICE=$(printf '%s\n' "$OPTIONS" | "$ROFI" \
+      -dmenu \
+      -p "󰐥 Power" \
+      -no-custom \
+      -theme-str 'window {width: 280px;}' \
+      -theme-str 'listview {lines: 5; scrollbar: false; fixed-height: true;}' \
+      -theme-str 'entry {enabled: false;}' \
+      -theme-str 'textbox-prompt-colon {enabled: false;}' \
+      || true)
 
-        [ -z "$CHOICE" ] && exit 0
+    [ -z "$CHOICE" ] && exit 0
 
-        # Strip leading icon + spaces to get the bare action name
-        ACTION=$(printf '%s' "$CHOICE" | ${pkgs.gnused}/bin/sed 's/^[^ ]*  *//')
+    # Strip leading icon + spaces to get the bare action name
+    ACTION=$(printf '%s' "$CHOICE" | ${pkgs.gnused}/bin/sed 's/^[^ ]*  *//')
 
-        # Lock is harmless — fire immediately, skip confirmation.
-        if [ "$ACTION" = "Lock" ]; then
-          exec loginctl lock-session
-        fi
+    # Lock is harmless — fire immediately, skip confirmation.
+    if [ "$ACTION" = "Lock" ]; then
+      exec loginctl lock-session
+    fi
 
-        # Step 2: confirm everything else. "No" first so accidental Enter cancels.
-        CONFIRM=$(printf 'No\nYes' | "$ROFI" \
-          -dmenu \
-          -p "$ACTION?" \
-          -no-custom \
-          -theme-str 'window {width: 240px;}' \
-          -theme-str 'listview {lines: 2; scrollbar: false; fixed-height: true;}' \
-          -theme-str 'entry {enabled: false;}' \
-          -theme-str 'textbox-prompt-colon {enabled: false;}' \
-          || true)
+    # Step 2: confirm everything else. "No" first so accidental Enter cancels.
+    CONFIRM=$(printf 'No\nYes' | "$ROFI" \
+      -dmenu \
+      -p "$ACTION?" \
+      -no-custom \
+      -theme-str 'window {width: 240px;}' \
+      -theme-str 'listview {lines: 2; scrollbar: false; fixed-height: true;}' \
+      -theme-str 'entry {enabled: false;}' \
+      -theme-str 'textbox-prompt-colon {enabled: false;}' \
+      || true)
 
-        [ "$CONFIRM" != "Yes" ] && exit 0
+    [ "$CONFIRM" != "Yes" ] && exit 0
 
-        case "$ACTION" in
-          Logout)   exec ${pkgs.uwsm}/bin/uwsm stop ;;
-          Suspend)  exec systemctl suspend ;;
-          Reboot)   exec systemctl reboot ;;
-          Shutdown) exec systemctl poweroff ;;
-        esac
+    case "$ACTION" in
+      Logout)   exec ${pkgs.uwsm}/bin/uwsm stop ;;
+      Suspend)  exec systemctl suspend ;;
+      Reboot)   exec systemctl reboot ;;
+      Shutdown) exec systemctl poweroff ;;
+    esac
   '';
 
   # ── USB disk manager ─────────────────────────────────────────────────────
@@ -358,7 +430,7 @@ let
   usb-menu = pkgs.writeShellScriptBin "usb-menu" ''
     set -euo pipefail
 
-    WOFI="${pkgs.wofi}/bin/wofi"
+    ROFI="${rofiBin}"
     JQ="${pkgs.jq}/bin/jq"
     LSBLK="${pkgs.util-linux}/bin/lsblk"
     UDISKSCTL="${pkgs.udisks2}/bin/udisksctl"
@@ -366,10 +438,10 @@ let
 
     refresh_waybar() { ${pkgs.procps}/bin/pkill -RTMIN+8 waybar 2>/dev/null || true; }
 
-    # Discover USB partitions: device | size | label | fstype | mountpoint
+    # Discover USB partitions: device|size|label|fstype|mountpoint
     ENTRIES=$(
-      $LSBLK -J -p -o NAME,TYPE,TRAN,SIZE,MOUNTPOINT,LABEL,FSTYPE 2>/dev/null \
-        | $JQ -r '
+      "$LSBLK" -J -p -o NAME,TYPE,TRAN,SIZE,MOUNTPOINT,LABEL,FSTYPE 2>/dev/null \
+        | "$JQ" -r '
             .blockdevices[]
             | select(.type == "disk" and .tran == "usb")
             | (.children // [])[]
@@ -378,63 +450,76 @@ let
     )
 
     if [ -z "$ENTRIES" ]; then
-      $NOTIFY -t 2000 "USB" "No USB partitions detected" -i "drive-removable-media"
+      "$NOTIFY" -t 2000 "USB" "No USB partitions detected" -i "drive-removable-media"
       exit 0
     fi
 
-    # Build menu lines. Embed the device path at the start, hidden behind
-    # a separator we strip after selection. Format:
-    #   <dev>|<icon>  <label>   <size> <fstype>   <status>
-    MENU=""
+    # Build display lines (icon + label + size + status). Order matches $ENTRIES.
+    DISPLAY=""
     while IFS='|' read -r dev size label fstype mount; do
       if [ -n "$mount" ]; then
-        MENU="$MENU$dev|●  $label   $size $fstype   →  $mount"$'\n'
+        DISPLAY="$DISPLAY●  $label   $size $fstype   →  $mount"$'\n'
       else
-        MENU="$MENU$dev|○  $label   $size $fstype   (not mounted)"$'\n'
+        DISPLAY="$DISPLAY○  $label   $size $fstype   (not mounted)"$'\n'
       fi
     done <<< "$ENTRIES"
-    MENU="''${MENU%$'\n'}"
+    DISPLAY="''${DISPLAY%$'\n'}"
 
-    # Show menu — but hide the device path column. wofi shows lines as-is, so
-    # we feed it just the visible part and look up the device by line number.
-    VISIBLE=$(printf '%s\n' "$MENU" | ${pkgs.gnused}/bin/sed 's/^[^|]*|//')
+    # rofi -format i returns the 0-based index of the selection.
+    # No need to parse the chosen line — just use the index to look up $ENTRIES.
+    IDX=$(printf '%s\n' "$DISPLAY" | "$ROFI" \
+      -dmenu \
+      -i \
+      -p "USB" \
+      -format i \
+      -no-custom \
+      -theme-str 'window {width: 600px;}' \
+      -theme-str 'listview {lines: 6; scrollbar: false; fixed-height: true;}' \
+      -theme-str 'textbox-prompt-colon {enabled: false;}' \
+      || true)
 
-    CHOSEN=$(printf '%s\n' "$VISIBLE" | "$WOFI" --dmenu --prompt "USB" --width 600 --height 300) || exit 0
+    [ -z "$IDX" ] && exit 0
 
-    # Map back: find the matching line in $MENU
-    LINE=$(printf '%s\n' "$MENU" | ${pkgs.gnugrep}/bin/grep -F "|$CHOSEN" | head -1)
-    DEV=$(printf '%s' "$LINE" | ${pkgs.gawk}/bin/awk -F'|' '{print $1}')
-
-    # Re-extract details for the chosen device
-    DETAILS=$(printf '%s\n' "$ENTRIES" | ${pkgs.gnugrep}/bin/grep "^$DEV|" | head -1)
-    IFS='|' read -r _ SIZE LABEL FSTYPE MOUNT <<< "$DETAILS"
+    # Pull the chosen entry by index (sed is 1-based, so add 1)
+    DETAILS=$(printf '%s\n' "$ENTRIES" | ${pkgs.gnused}/bin/sed -n "$((IDX+1))p")
+    IFS='|' read -r DEV SIZE LABEL FSTYPE MOUNT <<< "$DETAILS"
 
     # Action menu — different choices depending on mount state
     if [ -n "$MOUNT" ]; then
-      ACTIONS="Open in Nemo"$'\n'"Unmount"$'\n'"Eject (unmount + power off)"$'\n'"Cancel"
+      ACTIONS=$'Open in Nemo\nUnmount\nEject (unmount + power off)\nCancel'
+      LINES=4
     else
-      ACTIONS="Mount"$'\n'"Mount and open"$'\n'"Do not mount"$'\n'"Cancel"
+      ACTIONS=$'Mount\nMount and open\nDo not mount\nCancel'
+      LINES=4
     fi
 
-    ACTION=$(printf '%s\n' "$ACTIONS" | "$WOFI" --dmenu --prompt "$LABEL" --width 400 --height 200) || exit 0
+    ACTION=$(printf '%s' "$ACTIONS" | "$ROFI" \
+      -dmenu \
+      -i \
+      -p "$LABEL" \
+      -no-custom \
+      -theme-str "window {width: 360px;}" \
+      -theme-str "listview {lines: $LINES; scrollbar: false; fixed-height: true;}" \
+      -theme-str 'textbox-prompt-colon {enabled: false;}' \
+      || true)
 
     case "$ACTION" in
       "Mount")
-        OUT=$($UDISKSCTL mount -b "$DEV" 2>&1) || {
-          $NOTIFY -u critical -t 4000 "Mount failed: $LABEL" "$OUT" -i "dialog-error"
+        OUT=$("$UDISKSCTL" mount -b "$DEV" 2>&1) || {
+          "$NOTIFY" -u critical -t 4000 "Mount failed: $LABEL" "$OUT" -i "dialog-error"
           exit 1
         }
         MP=$(printf '%s' "$OUT" | ${pkgs.gnugrep}/bin/grep -oP 'at \K[^.]+' | ${pkgs.gnused}/bin/sed 's/[[:space:]]*$//')
-        $NOTIFY -t 3000 "Mounted $LABEL" "$MP" -i "drive-removable-media"
+        "$NOTIFY" -t 3000 "Mounted $LABEL" "$MP" -i "drive-removable-media"
         refresh_waybar
         ;;
       "Mount and open")
-        OUT=$($UDISKSCTL mount -b "$DEV" 2>&1) || {
-          $NOTIFY -u critical -t 4000 "Mount failed: $LABEL" "$OUT" -i "dialog-error"
+        OUT=$("$UDISKSCTL" mount -b "$DEV" 2>&1) || {
+          "$NOTIFY" -u critical -t 4000 "Mount failed: $LABEL" "$OUT" -i "dialog-error"
           exit 1
         }
         MP=$(printf '%s' "$OUT" | ${pkgs.gnugrep}/bin/grep -oP 'at \K[^.]+' | ${pkgs.gnused}/bin/sed 's/[[:space:]]*$//')
-        $NOTIFY -t 3000 "Mounted $LABEL" "$MP" -i "drive-removable-media"
+        "$NOTIFY" -t 3000 "Mounted $LABEL" "$MP" -i "drive-removable-media"
         refresh_waybar
         nemo "$MP" >/dev/null 2>&1 &
         disown
@@ -444,21 +529,21 @@ let
         disown
         ;;
       "Unmount")
-        OUT=$($UDISKSCTL unmount -b "$DEV" 2>&1) || {
-          $NOTIFY -u critical -t 4000 "Unmount failed: $LABEL" "$OUT" -i "dialog-error"
+        OUT=$("$UDISKSCTL" unmount -b "$DEV" 2>&1) || {
+          "$NOTIFY" -u critical -t 4000 "Unmount failed: $LABEL" "$OUT" -i "dialog-error"
           exit 1
         }
-        $NOTIFY -t 2000 "Unmounted $LABEL" "" -i "media-eject"
+        "$NOTIFY" -t 2000 "Unmounted $LABEL" "" -i "media-eject"
         refresh_waybar
         ;;
       "Eject (unmount + power off)")
-        OUT=$($UDISKSCTL unmount -b "$DEV" 2>&1) || {
-          $NOTIFY -u critical -t 4000 "Unmount failed: $LABEL" "$OUT" -i "dialog-error"
+        OUT=$("$UDISKSCTL" unmount -b "$DEV" 2>&1) || {
+          "$NOTIFY" -u critical -t 4000 "Unmount failed: $LABEL" "$OUT" -i "dialog-error"
           exit 1
         }
-        PARENT="/dev/$($LSBLK -no PKNAME "$DEV" | head -1)"
-        $UDISKSCTL power-off -b "$PARENT" >/dev/null 2>&1 || true
-        $NOTIFY -t 3000 "Ejected $LABEL" "Safe to remove" -i "media-eject"
+        PARENT="/dev/$("$LSBLK" -no PKNAME "$DEV" | head -1)"
+        "$UDISKSCTL" power-off -b "$PARENT" >/dev/null 2>&1 || true
+        "$NOTIFY" -t 3000 "Ejected $LABEL" "Safe to remove" -i "media-eject"
         refresh_waybar
         ;;
       *)
@@ -555,7 +640,6 @@ in
     # Runtime deps for scripts
     pkgs.hyprsunset
     pkgs.upower
-    pkgs.wofi
     pkgs.socat
     pkgs.libnotify
     pkgs.iproute2
@@ -577,7 +661,6 @@ in
     Install = { WantedBy = [ "graphical-session.target" ]; };
   };
 
-
   systemd.user.services.usb-monitor = {
     Unit = {
       Description = "USB insertion monitor → notifications";
@@ -591,5 +674,4 @@ in
     };
     Install = { WantedBy = [ "graphical-session.target" ]; };
   };
-
 }
