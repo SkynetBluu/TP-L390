@@ -8,7 +8,7 @@ let
 
   # Single source of truth for the rofi binary — change this in one place
   # to swap launchers (e.g. back to pkgs.rofi, or to a fork).
-  rofiBin = "${pkgs.rofi-wayland}/bin/rofi";
+  rofiBin = "${pkgs.rofi}/bin/rofi";
 
   # ── Blue light filter ────────────────────────────────────────────────────
 
@@ -373,56 +373,56 @@ let
   # graphical session cleanly.
 
   power-menu = pkgs.writeShellScriptBin "power-menu" ''
-    set -euo pipefail
+        set -euo pipefail
 
-    ROFI="${rofiBin}"
+        ROFI="${rofiBin}"
 
-    # Step 1: action picker. Search field hidden — pick by arrow keys/click only.
-    OPTIONS="󰌾  Lock
-󰍃  Logout
-󰒲  Suspend
-󰜉  Reboot
-󰐥  Shutdown"
+        # Step 1: action picker. Search field hidden — pick by arrow keys/click only.
+        OPTIONS="󰌾  Lock
+    󰍃  Logout
+    󰒲  Suspend
+    󰜉  Reboot
+    󰐥  Shutdown"
 
-    CHOICE=$(printf '%s\n' "$OPTIONS" | "$ROFI" \
-      -dmenu \
-      -p "󰐥 Power" \
-      -no-custom \
-      -theme-str 'window {width: 280px;}' \
-      -theme-str 'listview {lines: 5; scrollbar: false; fixed-height: true;}' \
-      -theme-str 'entry {enabled: false;}' \
-      -theme-str 'textbox-prompt-colon {enabled: false;}' \
-      || true)
+        CHOICE=$(printf '%s\n' "$OPTIONS" | "$ROFI" \
+          -dmenu \
+          -p "󰐥 Power" \
+          -no-custom \
+          -theme-str 'window {width: 280px;}' \
+          -theme-str 'listview {lines: 5; scrollbar: false; fixed-height: true;}' \
+          -theme-str 'entry {enabled: false;}' \
+          -theme-str 'textbox-prompt-colon {enabled: false;}' \
+          || true)
 
-    [ -z "$CHOICE" ] && exit 0
+        [ -z "$CHOICE" ] && exit 0
 
-    # Strip leading icon + spaces to get the bare action name
-    ACTION=$(printf '%s' "$CHOICE" | ${pkgs.gnused}/bin/sed 's/^[^ ]*  *//')
+        # Strip leading icon + spaces to get the bare action name
+        ACTION=$(printf '%s' "$CHOICE" | ${pkgs.gnused}/bin/sed 's/^[^ ]*  *//')
 
-    # Lock is harmless — fire immediately, skip confirmation.
-    if [ "$ACTION" = "Lock" ]; then
-      exec loginctl lock-session
-    fi
+        # Lock is harmless — fire immediately, skip confirmation.
+        if [ "$ACTION" = "Lock" ]; then
+          exec loginctl lock-session
+        fi
 
-    # Step 2: confirm everything else. "No" first so accidental Enter cancels.
-    CONFIRM=$(printf 'No\nYes' | "$ROFI" \
-      -dmenu \
-      -p "$ACTION?" \
-      -no-custom \
-      -theme-str 'window {width: 240px;}' \
-      -theme-str 'listview {lines: 2; scrollbar: false; fixed-height: true;}' \
-      -theme-str 'entry {enabled: false;}' \
-      -theme-str 'textbox-prompt-colon {enabled: false;}' \
-      || true)
+        # Step 2: confirm everything else. "No" first so accidental Enter cancels.
+        CONFIRM=$(printf 'No\nYes' | "$ROFI" \
+          -dmenu \
+          -p "$ACTION?" \
+          -no-custom \
+          -theme-str 'window {width: 240px;}' \
+          -theme-str 'listview {lines: 2; scrollbar: false; fixed-height: true;}' \
+          -theme-str 'entry {enabled: false;}' \
+          -theme-str 'textbox-prompt-colon {enabled: false;}' \
+          || true)
 
-    [ "$CONFIRM" != "Yes" ] && exit 0
+        [ "$CONFIRM" != "Yes" ] && exit 0
 
-    case "$ACTION" in
-      Logout)   exec ${pkgs.uwsm}/bin/uwsm stop ;;
-      Suspend)  exec systemctl suspend ;;
-      Reboot)   exec systemctl reboot ;;
-      Shutdown) exec systemctl poweroff ;;
-    esac
+        case "$ACTION" in
+          Logout)   exec ${pkgs.uwsm}/bin/uwsm stop ;;
+          Suspend)  exec systemctl suspend ;;
+          Reboot)   exec systemctl reboot ;;
+          Shutdown) exec systemctl poweroff ;;
+        esac
   '';
 
   # ── USB disk manager ─────────────────────────────────────────────────────
