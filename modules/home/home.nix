@@ -53,6 +53,25 @@
     nushell
   ];
 
+  # config nicotine directories
+  home.activation.nicotineDefaults =
+    config.lib.dag.entryAfter [ "writeBoundary" ] ''
+            config_file="$HOME/.config/nicotine/config"
+            if [ ! -f "$config_file" ]; then
+              run mkdir -p "$(dirname "$config_file")"
+              run cat > "$config_file" <<'EOF'
+      [transfers]
+      incompletedir = /share/slsk/incomplete
+      downloaddir = /share/slsk/downloads
+      uploaddir = /share/slsk/received
+      shared = [('share', '/share/slsk/share')]
+      rescanonstartup = True
+      downloadfilters = [['*.DS_Store', True], ['*.exe', True], ['*.msi', True], ['desktop.ini', True], ['Thumbs.db', True]]
+      EOF
+            run chmod 600 "$config_file"
+          fi
+    '';
+
   # ── Git ───────────────────────────────────────────────────────────────────
 
   programs.git = {
