@@ -181,6 +181,7 @@
     "d /share/slsk/share       2775 nimbus users - -"
     "d /share/slsk/downloads   2775 nimbus users - -"
     "d /share/slsk/incomplete  2775 nimbus users - -"
+    "d /share/slsk/received    2775 nimbus users - -"
   ];
 
   # ── Secrets (sops-nix) ────────────────────────────────────────────────────
