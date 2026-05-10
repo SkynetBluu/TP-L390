@@ -154,16 +154,16 @@
     enable = true;
     user = "nimbus";
     settings = {
-      music_directory = "/share/slskd/share";
+      music_directory = "/share/slsk/share";
       audio_output = [{
         type = "pipewire";
         name = "PipeWire";
       }];
 
       # Save state, so playlist/position survives restart
-      auto_update    = "yes";
+      auto_update = "yes";
       restore_paused = "yes";
-      filesystem_charset =  "UTF-8";
+      filesystem_charset = "UTF-8";
     };
     # default network setup is fine: localhost:6600
   };
@@ -173,41 +173,15 @@
     XDG_RUNTIME_DIR = "/run/user/1000";
   };
 
-  # ── Services ── slskd ─────────────────────────────────────────────────────
-  users.users.nimbus.extraGroups = [ "slskd" ];
+  # ── Services ── slsk ─────────────────────────────────────────────────────
 
   systemd.tmpfiles.rules = [
-    "d /share                   0755 root  root  - -"
-    "d /share/slskd             0755 slskd slskd - -"
-    "d /share/slskd/share       2775 slskd slskd - -"
-    "d /share/slskd/downloads   2775 slskd slskd - -"
-    "d /share/slskd/incomplete  2775 slskd slskd - -"
+    "d /share                  0755 root   root  - -"
+    "d /share/slsk             0755 nimbus users - -"
+    "d /share/slsk/share       2775 nimbus users - -"
+    "d /share/slsk/downloads   2775 nimbus users - -"
+    "d /share/slsk/incomplete  2775 nimbus users - -"
   ];
-
-  services.slskd = {
-    enable = true;
-    openFirewall = true;
-    environmentFile = "/etc/slskd/secrets.env";
-
-    settings = {
-      remote_configuration = false;
-
-      soulseek = {
-        description = "slskd on NixOS";
-        listen_port = 50300;
-      };
-
-      directories = {
-        downloads = "/share/slskd/downloads";
-        incomplete = "/share/slskd/incomplete";
-      };
-
-      shares.directories = [ "/share/slskd/share" ];
-
-      web.port = 5030;
-    };
-  };
-
 
   # ── Secrets (sops-nix) ────────────────────────────────────────────────────
   # Configure after first boot once SSH host key exists:

@@ -45,10 +45,11 @@
     kicad
     helix
     nemo-with-extensions
-    ffmpegthumbnailer        # video thumbnails
-    webp-pixbuf-loader       # webp image previews
+    ffmpegthumbnailer # video thumbnails
+    webp-pixbuf-loader # webp image previews
     rmpc
     mpc
+    nicotine-plus
   ];
 
   # ── Git ───────────────────────────────────────────────────────────────────
