@@ -7,6 +7,10 @@
   # Disable PulseAudio — PipeWire replaces it
   services.pulseaudio.enable = false;
 
+  services.udev.extraRules = ''
+    # Expert Sleepers Disting NT — NXP i.MX RT bootloader (SE Blank RT Family)
+    SUBSYSTEM=="usb", ATTRS{idVendor}=="1fc9", ATTRS{idProduct}=="0135", MODE="0666", TAG+="uaccess"
+  '';
   # RTKit — allows PipeWire to get realtime priority
   security.rtkit.enable = true;
 
