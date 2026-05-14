@@ -270,7 +270,6 @@
         "mako"
         "awww-daemon"
         "awww img $WALLPAPER"
-        "/run/current-system/sw/libexec/polkit-kde-authentication-agent-1"
         "wl-paste --type text --watch cliphist store"
         "nm-applet --indicator"
         "blueman-applet"

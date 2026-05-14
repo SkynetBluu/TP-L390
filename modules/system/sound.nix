@@ -8,9 +8,38 @@
   services.pulseaudio.enable = false;
 
   services.udev.extraRules = ''
-    # Expert Sleepers Disting NT — NXP i.MX RT bootloader (SE Blank RT Family)
-    SUBSYSTEM=="usb", ATTRS{idVendor}=="1fc9", ATTRS{idProduct}=="0135", MODE="0666", TAG+="uaccess"
+    # Expert Sleepers Disting NT — normal MIDI mode
+    SUBSYSTEM=="usb", ATTR{idVendor}=="3773", ATTR{idProduct}=="0001", MODE="0666", TAG+="uaccess"
+
+    # Disting NT — NXP ROM bootloader (SDP mode)
+    SUBSYSTEM=="usb", ATTR{idVendor}=="1fc9", ATTR{idProduct}=="0135", MODE="0666", TAG+="uaccess"
+
+    # Disting NT — NXP flashloader (during firmware flash)
+    SUBSYSTEM=="usb", ATTR{idVendor}=="15a2", ATTR{idProduct}=="0073", MODE="0666", TAG+="uaccess"
   '';
+  services.udev.packages = [
+    (pkgs.writeTextFile {
+      name = "99-disting-nt-rules";
+      destination = "/etc/udev/rules.d/99-disting-nt.rules";
+      text = ''
+        # nt_helper presence check satisfier.
+        # Actual active rules are in services.udev.extraRules.
+        SUBSYSTEM=="usb", ATTR{idVendor}=="1fc9", ATTR{idProduct}=="0135", MODE="0666"
+        SUBSYSTEM=="usb", ATTR{idVendor}=="15a2", ATTR{idProduct}=="0073", MODE="0666"
+      '';
+    })
+  ];
+
+  programs.nix-ld = {
+    enable = true;
+    libraries = with pkgs; [
+      libusb1
+      systemd
+      zlib
+      stdenv.cc.cc.lib
+    ];
+  };
+
   # RTKit — allows PipeWire to get realtime priority
   security.rtkit.enable = true;
 

@@ -22,7 +22,6 @@ in
     withUWSM = true; # Universal Wayland Session Manager — recommended
     xwayland.enable = true;
     package = inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.hyprland;
-    portalPackage = inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.xdg-desktop-portal-hyprland;
   };
 
   # ── Display Manager ───────────────────────────────────────────────────────
@@ -64,7 +63,9 @@ in
     enable = true;
     wlr.enable = false; # Use Hyprland's own portal
     xdgOpenUsePortal = false; # Hyprland portal doesn't fully support OpenURI
-    extraPortals = with pkgs; [ xdg-desktop-portal-gtk ];
+    extraPortals = with pkgs; [
+      xdg-desktop-portal-gtk
+    ];
     config = {
       common = {
         default = [ "hyprland" "gtk" ];
@@ -131,6 +132,21 @@ in
       Type = "oneshot";
       # 4s delay gives Intel GPU/DRM time to reinitialise after s2idle
       ExecStart = "${pkgs.bash}/bin/bash -c 'sleep 4 && ${pkgs.procps}/bin/pkill -CONT -f /bin/Hyprland'";
+    };
+  };
+
+
+  systemd.user.services.plasma-polkit-agent = {
+    description = "Plasma PolicyKit Authentication Agent";
+    wantedBy = [ "graphical-session.target" ];
+    wants = [ "graphical-session.target" ];
+    after = [ "graphical-session.target" ];
+    serviceConfig = {
+      Type = "simple";
+      ExecStart = "${pkgs.kdePackages.polkit-kde-agent-1}/libexec/polkit-kde-authentication-agent-1";
+      Restart = "on-failure";
+      RestartSec = 1;
+      TimeoutStopSec = 10;
     };
   };
 
