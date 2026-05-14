@@ -91,6 +91,26 @@
         "type": "github"
       }
     },
+    "helium-flake": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1778062668,
+        "narHash": "sha256-l6r54HHy30dnhPGjFR9j8Ss1xSTe9P+Lth4Ql5JfcVc=",
+        "owner": "oxcl",
+        "repo": "nix-flake-helium-browser",
+        "rev": "53aaa0a66eecac98c8b8bf1d5ca236ed424ed5e4",
+        "type": "github"
+      },
+      "original": {
+        "owner": "oxcl",
+        "repo": "nix-flake-helium-browser",
+        "type": "github"
+      }
+    },
     "home-manager": {
       "inputs": {
         "nixpkgs": [
@@ -501,6 +521,26 @@
         "type": "github"
       }
     },
+    "nt-helper": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1778793611,
+        "narHash": "sha256-GSgIdkWC/Tvh5QcrhcSJr/FWCGsVh+MgqpxdW76gAo4=",
+        "owner": "SkynetBluu",
+        "repo": "nt-helper-flake",
+        "rev": "e680fbe3c30dcb240322418354daf29d94c056e4",
+        "type": "github"
+      },
+      "original": {
+        "owner": "SkynetBluu",
+        "repo": "nt-helper-flake",
+        "type": "github"
+      }
+    },
     "pre-commit-hooks": {
       "inputs": {
         "flake-compat": "flake-compat",
@@ -527,11 +567,13 @@
     "root": {
       "inputs": {
         "disko": "disko",
+        "helium-flake": "helium-flake",
         "home-manager": "home-manager",
         "hy3": "hy3",
         "hyprland": "hyprland",
         "nixos-hardware": "nixos-hardware",
         "nixpkgs": "nixpkgs_2",
+        "nt-helper": "nt-helper",
         "sops-nix": "sops-nix"
       }
     },

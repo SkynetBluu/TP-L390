@@ -4,6 +4,11 @@
 { config, pkgs, lib, inputs, ... }:
 
 {
+
+  imports = [
+    inputs.helium-flake.nixosModules.default
+  ];
+
   # ── System ────────────────────────────────────────────────────────────────
 
   networking.hostName = "l390";
@@ -115,8 +120,6 @@
     vscode
     neovim
 
-    # Claude Code — from overlay
-
     # Wayland
     wl-clipboard
     wl-clipboard-x11
@@ -125,6 +128,7 @@
     # Media
     playerctl
     pavucontrol
+    inputs.nt-helper.packages.${pkgs.system}.default
 
     # Bluetooth
     blueman
@@ -183,6 +187,17 @@
     "d /share/slsk/incomplete  2775 nimbus users - -"
     "d /share/slsk/received    2775 nimbus users - -"
   ];
+
+  # ── Helium browser ────────────────────────────────────────────────────────
+  programs.helium = {
+    enable = true;
+    flags = [
+      "--ozone-platform=wayland"
+      "--ozone-platform-hint=wayland"
+      "--enable-features=UseOzonePlatform,WaylandWindowDecorations"
+      "--enable-wayland-ime"
+    ];
+  };
 
   # ── Secrets (sops-nix) ────────────────────────────────────────────────────
   # Configure after first boot once SSH host key exists:

@@ -9,11 +9,11 @@
     description = "Nimbus";
     shell = pkgs.bash; # Change to pkgs.zsh or pkgs.fish if preferred
     extraGroups = [
-      "wheel"          # sudo access
+      "wheel" # sudo access
       "networkmanager" # manage Wi-Fi without sudo
-      "video"          # screen brightness (brightnessctl)
-      "audio"          # audio devices
-      "input"          # input devices
+      "video" # screen brightness (brightnessctl)
+      "audio" # audio devices
+      "input" # input devices
     ];
   };
 

@@ -283,7 +283,7 @@
 
       bind = [
         "$mod, Return,      exec, ghostty"
-        "$mod, B,           exec, brave"
+        "$mod, B,           exec, helium"
         "$mod, E,           exec, ghostty -e yazi"
         "$mod, Z,           exec, ghostty -e zellij"
         "$mod, K,           exec, kicad"
@@ -406,8 +406,8 @@
         "image/jpeg" = "imv.desktop";
         "image/webp" = "imv.desktop";
         "image/gif" = "imv.desktop";
-        "x-scheme-handler/http" = "brave-browser.desktop";
-        "x-scheme-handler/https" = "brave-browser.desktop";
+        "x-scheme-handler/http" = "helium.desktop";
+        "x-scheme-handler/https" = "helium.desktop";
         # "inode/directory" = "yazi-ghostty.desktop";
         "inode/directory" = "nemo.desktop";
         "application/x-gnome-saved-search" = "nemo.desktop";
