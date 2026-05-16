@@ -1,7 +1,7 @@
 # modules/system/networking.nix
 # Network configuration — NetworkManager, Wi-Fi, firewall
 
-{ config, pkgs, ... }:
+{ ... }:
 
 {
   networking = {

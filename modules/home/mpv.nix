@@ -1,7 +1,7 @@
 # modules/home/mpv.nix
 # mpv video player — configured for YouTube, yt-dlp, and Wayland
 
-{ config, pkgs, lib, ... }:
+{ pkgs, ... }:
 
 let
   # ── Scripts ───────────────────────────────────────────────────────────────

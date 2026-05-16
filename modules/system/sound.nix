@@ -1,7 +1,7 @@
 # modules/system/sound.nix
 # Audio — PipeWire (replaces PulseAudio + JACK)
 
-{ config, pkgs, ... }:
+{ pkgs, ... }:
 
 {
   # Disable PulseAudio — PipeWire replaces it

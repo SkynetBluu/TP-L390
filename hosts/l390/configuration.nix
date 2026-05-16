@@ -1,7 +1,7 @@
 # hosts/l390/configuration.nix
 # Main NixOS configuration for ThinkPad L390 (Intel i5-8365U / UHD 620)
 
-{ config, pkgs, lib, inputs, ... }:
+{ config, pkgs, inputs, ... }:
 
 {
 
@@ -213,7 +213,12 @@
         "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
         "hyprland.cachix.org-1:a7pgxzMz7+chwVL3/pzj6jIBMioiJM7ypFP8PwtkuGc="
       ];
-      auto-optimise-store = true;
+      # auto-optimise-store removed (deprecated in newer Nix). Replaced by
+      # the periodic optimise timer below — same effect, runs outside builds.
+    };
+    optimise = {
+      automatic = true;
+      dates = [ "weekly" ];
     };
     gc = {
       automatic = true;

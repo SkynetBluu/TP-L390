@@ -1,7 +1,7 @@
 # modules/system/boot.nix
 # Boot configuration — systemd-boot, LUKS, Btrfs initrd, hibernation
 
-{ config, lib, pkgs, ... }:
+{ pkgs, ... }:
 
 {
   boot = {

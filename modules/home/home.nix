@@ -1,7 +1,7 @@
 # modules/home/home.nix
 # Home Manager configuration for nimbus — imports all home modules
 
-{ config, pkgs, inputs, theme, ... }:
+{ config, lib, pkgs, inputs, theme, ... }:
 
 {
   # ── Home Manager basics ───────────────────────────────────────────────────
@@ -10,9 +10,11 @@
   home.homeDirectory = "/home/nimbus";
   home.stateVersion = "24.11"; # Do not change after first install
 
-  # Used by awww (Hyprland exec-once) and hyprlock background.
+  # WALLPAPER is sourced from theme.nix; kept as a session variable for any
+  # ad-hoc scripts that expect it. The Hyprland config + hyprlock interpolate
+  # `theme.wallpaper` directly, so they don't depend on the env var.
   home.sessionVariables = {
-    WALLPAPER = "${config.home.homeDirectory}/.config/nixos/wallpapers/hiroshi-tsubono-medium.jpg";
+    WALLPAPER = theme.wallpaper;
   };
 
   programs.home-manager.enable = true;
@@ -63,7 +65,7 @@
 
   # config nicotine directories
   home.activation.nicotineDefaults =
-    config.lib.dag.entryAfter [ "writeBoundary" ] ''
+    lib.hm.dag.entryAfter [ "writeBoundary" ] ''
             config_file="$HOME/.config/nicotine/config"
             if [ ! -f "$config_file" ]; then
               run mkdir -p "$(dirname "$config_file")"
@@ -76,8 +78,11 @@
       rescanonstartup = True
       downloadfilters = [['*.DS_Store', True], ['*.exe', True], ['*.msi', True], ['desktop.ini', True], ['Thumbs.db', True]]
       EOF
-            run chmod 600 "$config_file"
-          fi
+              # 644 (not 600) — the file holds shared-dir paths and download
+              # filters, no credentials. Lets nicotine-internal helpers / other
+              # tools read it without sudo.
+              run chmod 644 "$config_file"
+            fi
     '';
 
   # ── Git ───────────────────────────────────────────────────────────────────
@@ -296,10 +301,10 @@
 
       # mako, swayosd-server, and hypridle are started by their own systemd
       # user units (services.mako, systemd.user.services.swayosd, services.hypridle).
-      # awww-daemon must be ready before `awww img` runs — chain in one entry so
-      # the wallpaper command waits for the daemon's IPC socket to come up.
+      # awww-daemon must be ready before `awww img` runs — poll its IPC socket
+      # rather than relying on a fixed sleep.
       exec-once = [
-        "awww-daemon & sleep 0.5 && awww img $WALLPAPER"
+        "awww-daemon & for i in $(seq 1 50); do awww query >/dev/null 2>&1 && break; sleep 0.05; done; awww img ${theme.wallpaper}"
         "wl-paste --type text --watch cliphist store"
         "nm-applet --indicator"
         "blueman-applet"
@@ -403,8 +408,9 @@
       ];
 
       windowrule = [
-        # Brave → workspace 2
-        "workspace 2, match:class brave-browser"
+        # Brave → workspace 2 (case-insensitive: brave reports class as
+        # "brave-browser" or "Brave-browser" depending on version/decorations)
+        "workspace 2, match:class (?i)brave-browser"
 
         # quick-notes → float, sized, centered
         "float on, match:class quick-notes"

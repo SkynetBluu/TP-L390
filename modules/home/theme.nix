@@ -39,4 +39,10 @@
     nvimColorscheme = "catppuccin";
     nvimFlavor      = "mocha";
   };
+
+  # Wallpaper — single source of truth. Consumed by:
+  #   - home.sessionVariables.WALLPAPER (utility scripts / runtime tools)
+  #   - Hyprland exec-once `awww img ...`
+  #   - Hyprlock background `path`
+  wallpaper = "/home/nimbus/.config/nixos/wallpapers/hiroshi-tsubono-medium.jpg";
 }

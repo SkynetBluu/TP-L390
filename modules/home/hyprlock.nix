@@ -139,7 +139,7 @@ in
 
       background = [{
         monitor = "";
-        path = "$WALLPAPER";
+        path = theme.wallpaper;
         blur_passes = 2;
         blur_size = 0.001;
         brightness = 0.8;
