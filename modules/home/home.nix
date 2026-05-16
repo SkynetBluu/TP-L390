@@ -89,7 +89,7 @@
       };
       init.defaultBranch = "main";
       pull.rebase = false;
-      core.editor = "hx";
+      # core.editor inherits $EDITOR, set by programs.helix.defaultEditor below
       color.ui = true;
     };
     signing.format = "openpgp"; # silence stateVersion warning
@@ -293,10 +293,11 @@
       misc = { force_default_wallpaper = 0; disable_hyprland_logo = true; };
 
       # mako, swayosd-server, and hypridle are started by their own systemd
-      # user units (services.mako, systemd.user.services.swayosd, services.hypridle)
+      # user units (services.mako, systemd.user.services.swayosd, services.hypridle).
+      # awww-daemon must be ready before `awww img` runs — chain in one entry so
+      # the wallpaper command waits for the daemon's IPC socket to come up.
       exec-once = [
-        "awww-daemon"
-        "awww img $WALLPAPER"
+        "awww-daemon & sleep 0.5 && awww img $WALLPAPER"
         "wl-paste --type text --watch cliphist store"
         "nm-applet --indicator"
         "blueman-applet"
@@ -425,7 +426,7 @@
         "audio/mpeg" = "mpv.desktop";
         "audio/flac" = "mpv.desktop";
         "audio/ogg" = "mpv.desktop";
-        "text/plain" = "nvim.desktop";
+        "text/plain" = "helix.desktop";
         "application/pdf" = "brave-browser.desktop";
         "image/png" = "imv.desktop";
         "image/jpeg" = "imv.desktop";

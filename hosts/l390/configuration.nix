@@ -46,7 +46,11 @@
       CPU_ENERGY_PERF_POLICY_ON_BAT = "power";
       SATA_LINKPWR_ON_BAT = "med_power_with_dipm";
       USB_AUTOSUSPEND = 1;
-      START_CHARGE_THRESH_BAT0 = 20;
+      # Boot defaults match the "balanced" mode of the battery-mode script
+      # (modules/home/scripts.nix) so Super+M cycles meaningfully from the
+      # current state. The user can adjust at runtime; tlp persists thresholds
+      # across reboots via /var/lib/tlp.
+      START_CHARGE_THRESH_BAT0 = 75;
       STOP_CHARGE_THRESH_BAT0 = 80;
     };
   };
@@ -136,7 +140,7 @@
     # USB flasher
     popsicle
     papirus-icon-theme
-    yt-dlp
+    # yt-dlp installed as firejail wrapper via security.nix wrappedBinaries
     yewtube
     nh
   ];
@@ -146,6 +150,10 @@
   services.blueman.enable = true;
   services.fwupd.enable = true;
   services.smartd.enable = true;
+
+  # dconf — needed for GTK/GNOME apps (notably nemo) to persist settings.
+  # Without this every launch is a fresh slate.
+  programs.dconf.enable = true;
 
   # ── Services ── mpd ──────────────────────────────────────────────────────
 
@@ -167,9 +175,11 @@
     # default network setup is fine: localhost:6600
   };
 
-  # MPD runs as a system service but needs to reach PipeWire's user socket
+  # MPD runs as a system service but needs to reach PipeWire's user socket.
+  # Derive the UID from users.users.nimbus.uid so this stays correct if pinned
+  # to a non-1000 value.
   systemd.services.mpd.environment = {
-    XDG_RUNTIME_DIR = "/run/user/1000";
+    XDG_RUNTIME_DIR = "/run/user/${toString config.users.users.nimbus.uid}";
   };
 
   # ── Services ── slsk ─────────────────────────────────────────────────────

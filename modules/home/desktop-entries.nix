@@ -11,10 +11,19 @@ let
       exec ghostty -e nvim
     fi
   '';
+
+  hx-launcher = pkgs.writeShellScriptBin "hx-launcher" ''
+    if [ -n "$1" ]; then
+      exec ghostty -e hx "$@"
+    else
+      exec ghostty -e hx
+    fi
+  '';
 in
 {
   home.packages = [
     nvim-launcher
+    hx-launcher
     pkgs.popsicle # USB flasher
     pkgs.parted
     pkgs.gparted
@@ -55,6 +64,27 @@ in
       comment = "Edit text files";
       exec = "nvim-launcher %F";
       icon = "nvim";
+      terminal = false;
+      type = "Application";
+      categories = [ "Utility" "TextEditor" ];
+      mimeType = [
+        "text/plain"
+        "text/english"
+        "application/x-shellscript"
+        "text/x-c"
+        "text/x-c++"
+        "text/x-java"
+        "text/x-python"
+      ];
+    };
+
+    # Helix with Ghostty launcher — system default editor
+    helix = {
+      name = "Helix";
+      genericName = "Text Editor";
+      comment = "Edit text files";
+      exec = "hx-launcher %F";
+      icon = "text-editor";
       terminal = false;
       type = "Application";
       categories = [ "Utility" "TextEditor" ];

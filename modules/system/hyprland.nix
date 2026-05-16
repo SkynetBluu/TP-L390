@@ -39,11 +39,12 @@ in
     enable = true;
     settings = {
       default_session = {
+        # --remember-session omitted: only Hyprland is enabled, so there's
+        # nothing to remember between sessions.
         command = ''
           ${pkgs.tuigreet}/bin/tuigreet \
             --time \
             --remember \
-            --remember-session \
             --asterisks \
             --sessions ${config.services.displayManager.sessionData.desktops}/share/wayland-sessions \
             --cmd "uwsm start -eD Hyprland hyprland-uwsm.desktop"
@@ -67,11 +68,10 @@ in
       xdg-desktop-portal-gtk
     ];
     config = {
-      common = {
-        default = [ "hyprland" "gtk" ];
-      };
+      common.default = [ "hyprland" "gtk" ];
+      # Per-portal overrides for Hyprland sessions — OpenURI and Settings have
+      # better support in the GTK portal than Hyprland's own.
       hyprland = {
-        default = [ "hyprland" "gtk" ];
         "org.freedesktop.impl.portal.OpenURI" = [ "gtk" ];
         "org.freedesktop.impl.portal.Settings" = [ "gtk" ];
       };
@@ -119,6 +119,9 @@ in
     serviceConfig = {
       Type = "oneshot";
       ExecStart = "${pkgs.procps}/bin/pkill -STOP -f '/bin/Hyprland'";
+      # pkill returns 1 when no process matched (e.g., suspending from TTY/greetd);
+      # treat that as success so journalctl doesn't fill with spurious failures.
+      SuccessExitStatus = "0 1";
     };
   };
 
@@ -130,6 +133,7 @@ in
       Type = "oneshot";
       # 4s delay gives Intel GPU/DRM time to reinitialise after s2idle
       ExecStart = "${pkgs.bash}/bin/bash -c 'sleep 4 && ${pkgs.procps}/bin/pkill -CONT -f /bin/Hyprland'";
+      SuccessExitStatus = "0 1";
     };
   };
 

@@ -5,6 +5,10 @@
 
 let
   # ── Scripts ───────────────────────────────────────────────────────────────
+  # The yt-* scripts deliberately call bare `mpv` and `yt-dlp` (rather than
+  # ${pkgs.mpv}/bin/mpv etc.) so PATH lookup resolves to the firejail wrappers
+  # in /run/current-system/sw/bin (see programs.firejail.wrappedBinaries in
+  # modules/system/security.nix). Hard-coding store paths bypasses the sandbox.
 
   # Helper script for yts fzf preview
   yt-preview = pkgs.writeShellScriptBin "yt-preview" ''
@@ -34,7 +38,7 @@ let
     QUERY="$*"
     echo "🔍 Searching YouTube for: $QUERY"
 
-    RESULTS=$(${pkgs.yt-dlp}/bin/yt-dlp \
+    RESULTS=$(yt-dlp \
       "ytsearch25:$QUERY" \
       --flat-playlist \
       --dump-json \
@@ -67,7 +71,7 @@ let
     VIDEO_TITLE=$(echo "$SELECTED" | cut -f2)
 
     echo "▶ Playing: $VIDEO_TITLE"
-    ${pkgs.mpv}/bin/mpv "https://www.youtube.com/watch?v=$VIDEO_ID"
+    mpv "https://www.youtube.com/watch?v=$VIDEO_ID"
   '';
 
   # Play YouTube playlist interactively
@@ -81,7 +85,7 @@ let
     URL="$1"
     echo "📋 Loading playlist..."
 
-    RESULTS=$(${pkgs.yt-dlp}/bin/yt-dlp \
+    RESULTS=$(yt-dlp \
       "$URL" \
       --flat-playlist \
       --dump-json \
@@ -101,7 +105,7 @@ let
         --height=60%) || exit 0
 
     echo "$SELECTED" | cut -f1 | while read -r id; do
-      ${pkgs.mpv}/bin/mpv "https://www.youtube.com/watch?v=$id"
+      mpv "https://www.youtube.com/watch?v=$id"
     done
   '';
 
@@ -119,7 +123,7 @@ let
     case "$MODE" in
       audio|mp3|a)
         echo "🎵 Downloading audio..."
-        ${pkgs.yt-dlp}/bin/yt-dlp \
+        yt-dlp \
           --extract-audio \
           --audio-format mp3 \
           --audio-quality 0 \
@@ -130,7 +134,7 @@ let
         ;;
       best|4k|b)
         echo "📹 Downloading best quality video..."
-        ${pkgs.yt-dlp}/bin/yt-dlp \
+        yt-dlp \
           --format "bestvideo+bestaudio/best" \
           --merge-output-format mkv \
           --embed-thumbnail \
@@ -140,7 +144,7 @@ let
         ;;
       video|v|*)
         echo "📹 Downloading video (1080p)..."
-        ${pkgs.yt-dlp}/bin/yt-dlp \
+        yt-dlp \
           --format "bestvideo[height<=1080]+bestaudio/best[height<=1080]" \
           --merge-output-format mp4 \
           --embed-thumbnail \
@@ -172,7 +176,7 @@ let
       play|p)
         if [ ! -s "$QUEUE_FILE" ]; then echo "Queue is empty"; exit 0; fi
         echo "▶ Playing queue ($(wc -l < "$QUEUE_FILE") items)..."
-        ${pkgs.mpv}/bin/mpv --playlist="$QUEUE_FILE"
+        mpv --playlist="$QUEUE_FILE"
         ;;
       clear|c)
         > "$QUEUE_FILE"
@@ -203,7 +207,7 @@ let
       echo "Example: yt-clip 'https://youtube.com/...' 1:30 2:45"
       exit 1
     fi
-    ${pkgs.mpv}/bin/mpv \
+    mpv \
       --start="$2" \
       --end="$3" \
       "$1"
@@ -345,7 +349,7 @@ in
     yt-mp3
     yt-queue
     yt-clip
-    pkgs.yt-dlp
+    # yt-dlp installed system-wide as firejail wrapper (modules/system/security.nix)
     pkgs.yewtube
   ];
 

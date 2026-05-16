@@ -87,6 +87,13 @@ in
         executable = "${pkgs.mpv}/bin/mpv";
         profile = "${pkgs.firejail}/etc/firejail/mpv.profile";
       };
+      # yt-dlp — upstream profile whitelists ~/Music, ~/Videos, ~/Downloads,
+      # ~/.config/yt-dlp, ~/.cache/yt-dlp; the scripts in modules/home/mpv.nix
+      # call bare `yt-dlp` so PATH resolves to this firejail wrapper.
+      yt-dlp = {
+        executable = "${pkgs.yt-dlp}/bin/yt-dlp";
+        profile = "${pkgs.firejail}/etc/firejail/yt-dlp.profile";
+      };
       qbittorrent = {
         executable = "${pkgs.qbittorrent}/bin/qbittorrent";
         profile = "${pkgs.firejail}/etc/firejail/qbittorrent.profile";
@@ -101,8 +108,10 @@ in
   security.apparmor.enable = true;
 
   # ── Polkit ────────────────────────────────────────────────────────────────
+  # Default adminIdentities = [ "unix-group:wheel" ] is already correct since
+  # nimbus is in wheel. Don't override it — doing so locks polkit admin to
+  # a specific username and breaks if a second wheel user is ever added.
   security.polkit.enable = true;
-  security.polkit.adminIdentities = [ "unix-user:nimbus" ];
 
   # ── Sudo ──────────────────────────────────────────────────────────────────
   security.sudo.wheelNeedsPassword = true;
@@ -132,10 +141,11 @@ in
   services.gnome.gnome-keyring.enable = true;
 
   # ── Packages ──────────────────────────────────────────────────────────────
+  # qbittorrent / mpv / yt-dlp are installed via programs.firejail.wrappedBinaries
+  # above — don't list the raw packages here or you'll collide on /run/current-system/sw/bin.
   environment.systemPackages = [
     brave-wrapper
     claude-wrapper
     pkgs.libsecret
-    pkgs.qbittorrent
   ];
 }

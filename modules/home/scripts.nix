@@ -129,21 +129,22 @@ let
 
   # ── Battery mode (ThinkPad charge thresholds) ────────────────────────────
 
+  # The system boot default (tlp 75/80 in configuration.nix) matches the
+  # `balanced` case below — so when the state file is missing we treat the
+  # current state as balanced, and Super+M cycles to `full` on first press.
   battery-mode = pkgs.writeShellScriptBin "battery-mode" ''
     STATE_FILE="$HOME/.config/battery-mode-state"
-    CURRENT_MODE=$(cat "$STATE_FILE" 2>/dev/null || echo "conservation")
+    CURRENT_MODE=$(cat "$STATE_FILE" 2>/dev/null || echo "balanced")
     case "$CURRENT_MODE" in
       conservation) NEXT_MODE="balanced";     START=75; STOP=80;  TITLE="Balanced Mode";      DESC="Charge: 75-80% (daily use)"      ;;
       balanced)     NEXT_MODE="full";         START=95; STOP=100; TITLE="Full Mode";           DESC="Charge: 95-100% (travel)"        ;;
       full)         NEXT_MODE="conservation"; START=55; STOP=60;  TITLE="Conservation Mode";   DESC="Charge: 55-60% (always plugged)" ;;
-      *)            NEXT_MODE="balanced";     START=75; STOP=80;  TITLE="Balanced Mode";       DESC="Charge: 75-80% (daily use)"      ;;
+      *)            NEXT_MODE="full";         START=95; STOP=100; TITLE="Full Mode";           DESC="Charge: 95-100% (travel)"        ;;
     esac
-    if command -v tlp &> /dev/null; then
-      sudo tlp setcharge $START $STOP BAT0 && \
-        echo "$NEXT_MODE" > "$STATE_FILE" && \
-        ${pkgs.libnotify}/bin/notify-send -t 3000 "$TITLE" "$DESC" || \
-        ${pkgs.libnotify}/bin/notify-send -t 3000 "Battery Error" "Failed to change mode" -i "dialog-error"
-    fi
+    sudo tlp setcharge $START $STOP BAT0 && \
+      echo "$NEXT_MODE" > "$STATE_FILE" && \
+      ${pkgs.libnotify}/bin/notify-send -t 3000 "$TITLE" "$DESC" || \
+      ${pkgs.libnotify}/bin/notify-send -t 3000 "Battery Error" "Failed to change mode" -i "dialog-error"
   '';
 
   # ── Touchpad toggle ──────────────────────────────────────────────────────

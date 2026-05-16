@@ -6,7 +6,12 @@
 {
   networking = {
     # NetworkManager handles Wi-Fi and ethernet
-    networkmanager.enable = true;
+    networkmanager = {
+      enable = true;
+      # Push per-link DNS into systemd-resolved (instead of NM writing its own
+      # resolv.conf). Without this the DNSSEC chain below is partly bypassed.
+      dns = "systemd-resolved";
+    };
 
     # Basic firewall
     firewall = {
@@ -23,9 +28,9 @@
       DNSSEC = "allow-downgrade";
       Domains = [ "~." ];
       FallbackDNS = [
-	"9.9.9.9"
-	"149.112.112.112"
-	"2620:fe::fe"
+        "9.9.9.9"
+        "149.112.112.112"
+        "2620:fe::fe"
       ];
     };
   };
