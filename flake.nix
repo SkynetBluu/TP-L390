@@ -18,11 +18,6 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    helium-flake = {
-      url = "github:oxcl/nix-flake-helium-browser";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
     # Hyprland — official flake for latest stable
     hyprland.url = "github:hyprwm/Hyprland?ref=v0.54.2";
     hy3 = {

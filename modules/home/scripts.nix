@@ -88,25 +88,30 @@ let
   perf-mode-daemon = pkgs.writeShellScriptBin "perf-mode-daemon" ''
     STATE_FILE="$HOME/.config/perf-mode-state"
     LAST_STATUS=""
+    # Apply settings for the current status. On the first call (LAST_STATUS
+    # empty) we apply but suppress the notification — the user didn't just
+    # plug/unplug, they just logged in. On subsequent calls a transition
+    # fires a notification.
     apply_mode() {
       local status="$1"
-      if [ "$status" = "Discharging" ] && [ "$LAST_STATUS" != "Discharging" ]; then
+      [ "$status" = "$LAST_STATUS" ] && return
+      local first_call=0
+      [ -z "$LAST_STATUS" ] && first_call=1
+
+      if [ "$status" = "Discharging" ]; then
         hyprctl keyword animations:enabled false
         hyprctl keyword misc:render_unfocused_fps 10
         hyprctl keyword decoration:blur:enabled false
         hyprctl keyword decoration:shadow:enabled false
         echo "battery" > "$STATE_FILE"
-        ${pkgs.libnotify}/bin/notify-send -t 2000 "Battery Mode" "󰂃 Battery saver auto-enabled" -i "battery-good"
-        LAST_STATUS="$status"
-      elif [ "$status" != "Discharging" ] && [ "$LAST_STATUS" = "Discharging" ]; then
+        [ "$first_call" = 0 ] && ${pkgs.libnotify}/bin/notify-send -t 2000 "Battery Mode" "󰂃 Battery saver auto-enabled" -i "battery-good"
+      else
         hyprctl keyword animations:enabled true
         hyprctl keyword misc:render_unfocused_fps 10
         echo "balanced" > "$STATE_FILE"
-        ${pkgs.libnotify}/bin/notify-send -t 2000 "AC Power" "󰂄 Balanced mode restored" -i "battery-full-charging"
-        LAST_STATUS="$status"
-      elif [ -z "$LAST_STATUS" ]; then
-        LAST_STATUS="$status"
+        [ "$first_call" = 0 ] && ${pkgs.libnotify}/bin/notify-send -t 2000 "AC Power" "󰂄 Balanced mode restored" -i "battery-full-charging"
       fi
+      LAST_STATUS="$status"
     }
     if [ -f /sys/class/power_supply/BAT0/status ]; then
       apply_mode "$(cat /sys/class/power_supply/BAT0/status)"

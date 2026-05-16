@@ -5,10 +5,6 @@
 
 {
 
-  imports = [
-    inputs.helium-flake.nixosModules.default
-  ];
-
   # ── System ────────────────────────────────────────────────────────────────
 
   networking.hostName = "l390";
@@ -59,8 +55,10 @@
   services.power-profiles-daemon.enable = false;
 
   # ── Boot / Hibernation ────────────────────────────────────────────────────
-  # After install, verify UUID: blkid /dev/sda3
-  # Update to: boot.resumeDevice = "/dev/disk/by-uuid/YOUR-UUID";
+  # resumeDevice points at the opened LUKS mapper, not a partition UUID, so it
+  # doesn't change per-install. The UUID that DOES need updating after install
+  # is `boot.initrd.luks.devices.cryptswap.device` in modules/system/boot.nix
+  # (run `blkid /dev/sda3` to get the encrypted swap partition's UUID).
   boot.resumeDevice = lib.mkForce "/dev/mapper/cryptswap";
 
   # ── Packages ──────────────────────────────────────────────────────────────
@@ -187,17 +185,6 @@
     "d /share/slsk/incomplete  2775 nimbus users - -"
     "d /share/slsk/received    2775 nimbus users - -"
   ];
-
-  # ── Helium browser ────────────────────────────────────────────────────────
-  programs.helium = {
-    enable = true;
-    flags = [
-      "--ozone-platform=wayland"
-      "--ozone-platform-hint=wayland"
-      "--enable-features=UseOzonePlatform,WaylandWindowDecorations"
-      "--enable-wayland-ime"
-    ];
-  };
 
   # ── Secrets (sops-nix) ────────────────────────────────────────────────────
   # Configure after first boot once SSH host key exists:

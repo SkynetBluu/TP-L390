@@ -184,6 +184,17 @@ let
     esac
   '';
 
+  # MP3 download wrapper — bash aliases can't reorder positional args, so
+  # `ytmp3 <url>` needs a real script to put "audio" in $2.
+  yt-mp3 = pkgs.writeShellScriptBin "yt-mp3" ''
+    set -euo pipefail
+    if [ -z "''${1:-}" ]; then
+      echo "Usage: ytmp3 <url>"
+      exit 1
+    fi
+    exec ${yt-download}/bin/yt-download "$1" audio
+  '';
+
   # Quick clip — play a specific time range from a URL
   yt-clip = pkgs.writeShellScriptBin "yt-clip" ''
     set -euo pipefail
@@ -330,6 +341,7 @@ in
     yt-search
     yt-playlist
     yt-download
+    yt-mp3
     yt-queue
     yt-clip
     pkgs.yt-dlp

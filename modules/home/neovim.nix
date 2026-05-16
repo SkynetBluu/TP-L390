@@ -7,7 +7,7 @@
   programs.neovim = {
     enable         = true;
     package        = pkgs.neovim-unwrapped;
-    defaultEditor  = true;
+    defaultEditor  = false; # helix is the default; nvim stays available as a fallback
     viAlias        = true;
     vimAlias       = true;
     vimdiffAlias   = true;

@@ -43,7 +43,6 @@
     p7zip
     lazygit
     kicad
-    helix
     nemo-with-extensions
     ffmpegthumbnailer # video thumbnails
     webp-pixbuf-loader # webp image previews
@@ -83,7 +82,7 @@
       };
       init.defaultBranch = "main";
       pull.rebase = false;
-      core.editor = "nvim";
+      core.editor = "hx";
       color.ui = true;
     };
     signing.format = "openpgp"; # silence stateVersion warning
@@ -99,6 +98,27 @@
   };
 
   programs.lazygit.enable = true;
+
+  # ── Helix ─────────────────────────────────────────────────────────────────
+  # Primary editor — set as system default via $EDITOR. Neovim stays available
+  # via `nvim`/`vi`/`vim` as a fallback for plugin-heavy workflows.
+  programs.helix = {
+    enable = true;
+    defaultEditor = true;
+    settings = {
+      theme = "catppuccin_mocha";
+      editor = {
+        line-number = "relative";
+        cursorline = true;
+        true-color = true;
+        bufferline = "multiple";
+        color-modes = true;
+        indent-guides.render = true;
+        lsp.display-messages = true;
+        cursor-shape = { insert = "bar"; normal = "block"; select = "underline"; };
+      };
+    };
+  };
 
   # ── Alacritty ─────────────────────────────────────────────────────────────
 
@@ -282,7 +302,7 @@
 
       bind = [
         "$mod, Return,      exec, ghostty"
-        "$mod, B,           exec, helium"
+        "$mod, B,           exec, brave"
         "$mod, E,           exec, ghostty -e yazi"
         "$mod, Z,           exec, ghostty -e zellij"
         "$mod, K,           exec, kicad"
@@ -405,8 +425,8 @@
         "image/jpeg" = "imv.desktop";
         "image/webp" = "imv.desktop";
         "image/gif" = "imv.desktop";
-        "x-scheme-handler/http" = "helium.desktop";
-        "x-scheme-handler/https" = "helium.desktop";
+        "x-scheme-handler/http" = "brave-browser.desktop";
+        "x-scheme-handler/https" = "brave-browser.desktop";
         # "inode/directory" = "yazi-ghostty.desktop";
         "inode/directory" = "nemo.desktop";
         "application/x-gnome-saved-search" = "nemo.desktop";
