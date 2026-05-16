@@ -10,9 +10,8 @@
   home.homeDirectory = "/home/nimbus";
   home.stateVersion = "24.11"; # Do not change after first install
 
-  # WALLPAPER is sourced from theme.nix; kept as a session variable for any
-  # ad-hoc scripts that expect it. The Hyprland config + hyprlock interpolate
-  # `theme.wallpaper` directly, so they don't depend on the env var.
+  # theme.wallpaper is the source of truth; this env var is for ad-hoc scripts only
+  # (the Hyprland + hyprlock configs interpolate theme.wallpaper directly).
   home.sessionVariables = {
     WALLPAPER = theme.wallpaper;
   };
@@ -78,9 +77,7 @@
       rescanonstartup = True
       downloadfilters = [['*.DS_Store', True], ['*.exe', True], ['*.msi', True], ['desktop.ini', True], ['Thumbs.db', True]]
       EOF
-              # 644 (not 600) — the file holds shared-dir paths and download
-              # filters, no credentials. Lets nicotine-internal helpers / other
-              # tools read it without sudo.
+              # 644: no credentials in this file, just paths + filters.
               run chmod 644 "$config_file"
             fi
     '';
@@ -191,12 +188,8 @@
       rebuild = "nh os switch ~/.config/nixos";
       update = "nh os switch --update ~/.config/nixos";
       cleanup = "nh clean all";
-      # Claude-code update instructions live in overlays/claude-code-latest.nix (header)
-      # and README.md ("Updating Claude Code") — no shortcut alias needed.
     };
-    # starship + fzf bash integration is handled by their HM modules
-    # (programs.starship.enableBashIntegration / programs.fzf.enableBashIntegration,
-    # both default-true). No bashrcExtra needed.
+    # starship/fzf bash integration handled by their HM modules (default-on).
   };
 
   programs.fzf.enable = true;
@@ -298,10 +291,8 @@
 
       misc = { force_default_wallpaper = 0; disable_hyprland_logo = true; };
 
-      # mako, swayosd-server, and hypridle are started by their own systemd
-      # user units (services.mako, systemd.user.services.swayosd, services.hypridle).
-      # awww-daemon must be ready before `awww img` runs — poll its IPC socket
-      # rather than relying on a fixed sleep.
+      # mako / swayosd / hypridle are started by their own systemd user units.
+      # awww poll loop waits for the daemon's IPC socket before setting wallpaper.
       exec-once = [
         "awww-daemon & for i in $(seq 1 50); do awww query >/dev/null 2>&1 && break; sleep 0.05; done; awww img ${theme.wallpaper}"
         "wl-paste --type text --watch cliphist store"

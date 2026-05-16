@@ -633,11 +633,7 @@ in
     power-menu
     usb-menu
     usb-monitor
-    # Kept on PATH for interactive shell use. The scripts above call these via
-    # absolute /nix/store paths, so removing any of these won't break the scripts —
-    # only ad-hoc terminal use of `notify-send`, `lsblk`, `udisksctl`, etc.
-    # gnused/gnugrep/gawk/findutils/coreutils/procps are in the NixOS default
-    # system path already, so they're omitted here.
+    # On PATH for interactive shell use (scripts above use /nix/store paths).
     pkgs.hyprsunset
     pkgs.upower
     pkgs.libnotify

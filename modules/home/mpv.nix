@@ -5,10 +5,8 @@
 
 let
   # ── Scripts ───────────────────────────────────────────────────────────────
-  # The yt-* scripts deliberately call bare `mpv` and `yt-dlp` (rather than
-  # ${pkgs.mpv}/bin/mpv etc.) so PATH lookup resolves to the firejail wrappers
-  # in /run/current-system/sw/bin (see programs.firejail.wrappedBinaries in
-  # modules/system/security.nix). Hard-coding store paths bypasses the sandbox.
+  # yt-* scripts use bare `mpv` / `yt-dlp` so PATH resolves to the firejail
+  # wrappers (modules/system/security.nix). Don't hard-code store paths.
 
   # Helper script for yts fzf preview
   yt-preview = pkgs.writeShellScriptBin "yt-preview" ''

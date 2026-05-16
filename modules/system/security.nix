@@ -9,14 +9,11 @@ let
   # scope management — wrappedBinaries can't express these requirements
   brave-wayland = pkgs.brave.override {
     commandLineArgs = [
-      # --ozone-platform-hint=wayland is the modern way; it auto-falls-back to
-      # X11 if Wayland isn't available. UseOzonePlatform / --ozone-platform=...
-      # are implied by the hint, so they're not needed.
+      # Hint auto-falls-back to X11; implies UseOzonePlatform.
       "--ozone-platform-hint=wayland"
       "--enable-features=TouchpadOverscrollHistoryNavigation,WaylandWindowDecorations"
-      # AsyncDns + DoH disabled so name resolution flows through systemd-resolved
-      # (DNSSEC + fallback DNS configured in modules/system/networking.nix).
-      # Without this, Brave does its own DNS and bypasses the resolved stack.
+      # AsyncDns + DoH off so DNS flows through systemd-resolved (DNSSEC chain
+      # in modules/system/networking.nix).
       "--disable-features=WaylandWpColorManagerV1,AsyncDns"
       "--dns-over-https-mode=off"
       "--enable-gpu-rasterization"
@@ -110,9 +107,7 @@ in
   security.apparmor.enable = true;
 
   # ── Polkit ────────────────────────────────────────────────────────────────
-  # Default adminIdentities = [ "unix-group:wheel" ] is already correct since
-  # nimbus is in wheel. Don't override it — doing so locks polkit admin to
-  # a specific username and breaks if a second wheel user is ever added.
+  # Don't set adminIdentities — default `unix-group:wheel` already covers nimbus.
   security.polkit.enable = true;
 
   # ── Sudo ──────────────────────────────────────────────────────────────────

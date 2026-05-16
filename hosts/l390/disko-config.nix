@@ -113,11 +113,8 @@
                       ];
                     };
 
-                    # Snapshots — reserved for future use. Currently empty:
-                    # snapper (if/when enabled — see hosts/l390/configuration.nix)
-                    # would create its own /home/.snapshots subvolume under @home,
-                    # not write here. Kept so a future root-snapshot policy has a
-                    # place to live without re-disko'ing.
+                    # Reserved for future root-snapshot policy. Snapper (see
+                    # hosts/l390/configuration.nix) would write to /home/.snapshots, not here.
                     "@snapshots" = {
                       mountpoint = "/.snapshots";
                       mountOptions = [

@@ -25,16 +25,9 @@ in
   };
 
   # ── Display Manager ───────────────────────────────────────────────────────
-  # greetd + tuigreet — minimal TTY-based greeter, no graphical compositor in
-  # the login path. Hyprland is the only Wayland session on the system.
-  #
-  # `--remember` pre-fills the username field after the first successful login.
-  # The cache dir (/var/cache/tuigreet, owned by user `greeter`) is set up by
-  # the NixOS module automatically.
-  #
+  # greetd + tuigreet (TTY-based). `--remember` pre-fills the last username.
   # `uwsm start -eD Hyprland hyprland-uwsm.desktop` is the canonical UWSM
-  # launch command — using bare `Hyprland` triggers the "started without
-  # start-hyprland" warning since recent Hyprland versions.
+  # launch — bare `Hyprland` triggers a "started without start-hyprland" warning.
   services.greetd = {
     enable = true;
     settings = {
@@ -140,11 +133,8 @@ in
   };
 
 
-  # Polkit authentication agent — Hyprland-native, runs as a user service
-  # under graphical-session.target. Replaces the heavier polkit-kde-agent.
-  # (security.polkit.enable is set in modules/system/security.nix.)
-  # No `services.hyprpolkitagent` module exists in nixpkgs yet, so wire the
-  # binary directly via systemd.user.services.
+  # Polkit authentication agent (no `services.hyprpolkitagent` module in nixpkgs yet).
+  # security.polkit.enable is in modules/system/security.nix.
   systemd.user.services.hyprpolkitagent = {
     description = "Hyprland Polkit Authentication Agent";
     wantedBy = [ "graphical-session.target" ];
