@@ -183,6 +183,40 @@
     "d /share/slsk/received    2775 nimbus users - -"
   ];
 
+  # ── Data integrity (btrfs scrub + snapshots) ─────────────────────────────
+  # Both intentionally OFF. Notes for when/if we turn them on:
+  #
+  # 1. Scrub: walks every block and verifies checksums. On this single-SSD
+  #    laptop there's no redundancy so scrub can't *repair* anything — it
+  #    only surfaces silent bit-rot. Monthly is the sensible cadence:
+  #
+  #      services.btrfs.autoScrub = {
+  #        enable = true;
+  #        interval = "monthly";
+  #        fileSystems = [ "/" ];   # covers @, @home, @nix, @log (same fs)
+  #      };
+  #
+  # 2. Snapper for /home only. NixOS generations already cover @ rollback;
+  #    @nix is GC-managed; @home is the only subvol where snapshots add value
+  #    (accidental rm, corrupted dotfiles). Snapper auto-creates and manages
+  #    /home/.snapshots; the disko `@snapshots` mount at /.snapshots stays
+  #    unused unless we ever decide to snapshot root too.
+  #
+  #      services.snapper.configs.home = {
+  #        SUBVOLUME = "/home";
+  #        ALLOW_USERS = [ "nimbus" ];
+  #        TIMELINE_CREATE = true;
+  #        TIMELINE_CLEANUP = true;
+  #        TIMELINE_LIMIT_HOURLY = 5;
+  #        TIMELINE_LIMIT_DAILY = 7;
+  #        TIMELINE_LIMIT_WEEKLY = 4;
+  #        TIMELINE_LIMIT_MONTHLY = 3;
+  #        TIMELINE_LIMIT_YEARLY = 0;
+  #      };
+  #
+  # Note: snapshots on the same disk are NOT a backup. They protect against
+  # mistakes, not hardware failure. For real backup add btrbk → USB/remote.
+
   # ── Secrets (sops-nix) ────────────────────────────────────────────────────
   # Configure after first boot once SSH host key exists:
   #

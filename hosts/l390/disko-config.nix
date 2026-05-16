@@ -50,22 +50,21 @@
 
             # Swap partition inside LUKS
             # 16GB — matches RAM for full hibernation support
-            
-	    swap = {
-	      size = "16G";
-	      priority = 3;
-	      content = {
-		type = "luks";
-		name = "cryptswap";
-		settings = {
-		  allowDiscards = true;
-		};
-		content = {
-		  type = "swap";
-		  resumeDevice = true;
-		};
-	      };
-	    };
+            swap = {
+              size = "16G";
+              priority = 3;
+              content = {
+                type = "luks";
+                name = "cryptswap";
+                settings = {
+                  allowDiscards = true;
+                };
+                content = {
+                  type = "swap";
+                  resumeDevice = true;
+                };
+              };
+            };
 
 
             # Root partition — LUKS encrypted Btrfs
@@ -114,7 +113,11 @@
                       ];
                     };
 
-                    # Snapshots
+                    # Snapshots — reserved for future use. Currently empty:
+                    # snapper (if/when enabled — see hosts/l390/configuration.nix)
+                    # would create its own /home/.snapshots subvolume under @home,
+                    # not write here. Kept so a future root-snapshot policy has a
+                    # place to live without re-disko'ing.
                     "@snapshots" = {
                       mountpoint = "/.snapshots";
                       mountOptions = [

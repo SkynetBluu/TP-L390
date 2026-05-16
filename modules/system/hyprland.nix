@@ -79,9 +79,10 @@ in
   };
 
   # ── Wayland environment variables ─────────────────────────────────────────
-  # NOTE: XDG_CURRENT_DESKTOP, XDG_SESSION_TYPE set automatically by UWSM
+  # NOTE: XDG_CURRENT_DESKTOP, XDG_SESSION_TYPE set automatically by UWSM.
+  # WALLPAPER lives in home.sessionVariables (modules/home/home.nix) since it's
+  # only consumed by user-side processes (awww, hyprlock).
   environment.sessionVariables = {
-    WALLPAPER = "/home/nimbus/.config/nixos/wallpapers/hiroshi-tsubono-medium.jpg";
     NIXOS_OZONE_WL = "1"; # Electron apps (VS Code, Brave)
     MOZ_ENABLE_WAYLAND = "1"; # Firefox
     QT_QPA_PLATFORM = "wayland;xcb"; # Qt apps (xcb fallback)
@@ -91,9 +92,6 @@ in
     # Intel VA-API hardware video decode
     LIBVA_DRIVER_NAME = "iHD";
   };
-
-  # ── Security ──────────────────────────────────────────────────────────────
-  security.polkit.enable = true;
 
   # ── Removable storage ────────────────────────────────────────────────────
   services.udisks2.enable = true;

@@ -60,7 +60,7 @@ let
     "SUPER + B                Web Browser          Brave"
     "SUPER + E                File Explorer        Yazi"
     "SUPER + Space            Launcher             Rofi"
-    "SUPER + O                Notes                Neovim"
+    "SUPER + O                Notes                Helix"
     "SUPER + K                KiCad"
     "SUPER + Shift + S        Screenshot"
     "SUPER + N                Blue light"

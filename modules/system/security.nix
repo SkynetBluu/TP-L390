@@ -12,6 +12,9 @@ let
       "--ozone-platform=wayland"
       "--ozone-platform-hint=wayland"
       "--enable-features=TouchpadOverscrollHistoryNavigation,UseOzonePlatform,WaylandWindowDecorations"
+      # AsyncDns + DoH disabled so name resolution flows through systemd-resolved
+      # (DNSSEC + fallback DNS configured in modules/system/networking.nix).
+      # Without this, Brave does its own DNS and bypasses the resolved stack.
       "--disable-features=WaylandWpColorManagerV1,AsyncDns"
       "--dns-over-https-mode=off"
       "--enable-gpu-rasterization"

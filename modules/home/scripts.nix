@@ -314,7 +314,9 @@ let
     # Quick Note - $(date '+%Y-%m-%d %H:%M')
     ---
     TEMPLATE
-    ghostty --class="quick-notes" -e nvim "+normal G" "$NOTE_FILE"
+    # Open at the last line (helix `:N` suffix). Press `o` to open a new line below.
+    LINES=$(wc -l < "$NOTE_FILE")
+    ghostty --class="quick-notes" -e hx "$NOTE_FILE:$LINES"
   '';
 
   # ── System info ──────────────────────────────────────────────────────────
@@ -614,25 +616,6 @@ let
       done
   '';
 
-  # ── hypr-current-workspace-launch ────────────────────────────────────────
-
-  hypr-current-workspace-launch = pkgs.writeShellScriptBin "hypr-current-workspace-launch" ''
-    set -euo pipefail
-    if [ "$#" -lt 2 ]; then echo "usage: hypr-current-workspace-launch <class-regex> <command> [args...]" >&2; exit 64; fi
-    CLASS_RE="$1"; shift
-    if [ "$#" -gt 1 ]; then exec "$@"; fi
-    JQ="${pkgs.jq}/bin/jq"
-    if ! CLIENTS_JSON=$(hyprctl clients -j 2>/dev/null); then exec "$@"; fi
-    WIN=$(printf '%s\n' "$CLIENTS_JSON" | "$JQ" -r --arg class_re "$CLASS_RE" '
-      [.[] | select(((.class//"") | test($class_re)) or ((.initialClass//"") | test($class_re))) | select((.mapped//true)==true)]
-      | sort_by(if ((.focusHistoryID//999999)<0) then 999999 else (.focusHistoryID//999999) end)
-      | .[0].address // empty')
-    if [ -z "$WIN" ]; then exec "$@"; fi
-    ACTIVE_WS=$(hyprctl activeworkspace -j 2>/dev/null | "$JQ" -r '.id // empty' || true)
-    case "$ACTIVE_WS" in ""|null|-*) ;; *) hyprctl dispatch movetoworkspacesilent "$ACTIVE_WS,address:$WIN" >/dev/null 2>&1 || true ;; esac
-    hyprctl dispatch focuswindow "address:$WIN" >/dev/null 2>&1 || true
-  '';
-
 in
 {
   home.packages = [
@@ -647,20 +630,17 @@ in
     quick-notes
     sysinfo-panel
     power-menu
-    hypr-current-workspace-launch
     usb-menu
     usb-monitor
-    # Runtime deps for scripts
+    # Kept on PATH for interactive shell use. The scripts above call these via
+    # absolute /nix/store paths, so removing any of these won't break the scripts —
+    # only ad-hoc terminal use of `notify-send`, `lsblk`, `udisksctl`, etc.
+    # gnused/gnugrep/gawk/findutils/coreutils/procps are in the NixOS default
+    # system path already, so they're omitted here.
     pkgs.hyprsunset
     pkgs.upower
-    pkgs.socat
     pkgs.libnotify
     pkgs.iproute2
-    pkgs.procps
-    pkgs.gawk
-    pkgs.gnugrep
-    pkgs.gnused
-    pkgs.findutils
     pkgs.jq
     pkgs.util-linux
     pkgs.udisks2

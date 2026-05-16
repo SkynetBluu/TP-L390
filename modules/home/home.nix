@@ -10,6 +10,11 @@
   home.homeDirectory = "/home/nimbus";
   home.stateVersion = "24.11"; # Do not change after first install
 
+  # Used by awww (Hyprland exec-once) and hyprlock background.
+  home.sessionVariables = {
+    WALLPAPER = "${config.home.homeDirectory}/.config/nixos/wallpapers/hiroshi-tsubono-medium.jpg";
+  };
+
   programs.home-manager.enable = true;
 
   # ── Imports ───────────────────────────────────────────────────────────────

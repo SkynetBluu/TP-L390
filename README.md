@@ -134,7 +134,7 @@ and run `rebuild`.
 | `Super + B` | Browser (Brave) |
 | `Super + E` | File manager (Yazi) |
 | `Super + Space` | App launcher (Rofi) |
-| `Super + O` | Quick notes (Neovim) |
+| `Super + O` | Quick notes (Helix) |
 | `Super + Q` | Kill window (hy3-aware) |
 | `Super + F` | Fullscreen |
 | `Super + G` | Float/tile toggle |
