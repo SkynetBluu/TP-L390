@@ -191,9 +191,8 @@
       rebuild = "nh os switch ~/.config/nixos";
       update = "nh os switch --update ~/.config/nixos";
       cleanup = "nh clean all";
-
-      # Claude Code update helper
-      update-claude-code = "echo 'Update overlays/claude-code-latest.nix with latest version and hash'";
+      # Claude-code update instructions live in overlays/claude-code-latest.nix (header)
+      # and README.md ("Updating Claude Code") — no shortcut alias needed.
     };
     # starship + fzf bash integration is handled by their HM modules
     # (programs.starship.enableBashIntegration / programs.fzf.enableBashIntegration,

@@ -53,7 +53,7 @@ in
       };
       # Auto-login on boot — runs once, no password. Logout falls back to default_session.
       initial_session = {
-        command = "uwsm start -eD Hyprland hyprland-uwsm.desktop";
+        command = "${pkgs.uwsm}/bin/uwsm start -eD Hyprland hyprland-uwsm.desktop";
         user = "nimbus";
       };
     };
@@ -118,7 +118,9 @@ in
     wantedBy = [ "systemd-suspend.service" "systemd-hibernate.service" "systemd-suspend-then-hibernate.service" ];
     serviceConfig = {
       Type = "oneshot";
-      ExecStart = "${pkgs.procps}/bin/pkill -STOP -f '/bin/Hyprland'";
+      # -x matches process name exactly (Hyprland), avoiding false matches
+      # against any process whose argv happens to contain "/bin/Hyprland".
+      ExecStart = "${pkgs.procps}/bin/pkill -STOP -x Hyprland";
       # pkill returns 1 when no process matched (e.g., suspending from TTY/greetd);
       # treat that as success so journalctl doesn't fill with spurious failures.
       SuccessExitStatus = "0 1";
@@ -132,7 +134,7 @@ in
     serviceConfig = {
       Type = "oneshot";
       # 4s delay gives Intel GPU/DRM time to reinitialise after s2idle
-      ExecStart = "${pkgs.bash}/bin/bash -c 'sleep 4 && ${pkgs.procps}/bin/pkill -CONT -f /bin/Hyprland'";
+      ExecStart = "${pkgs.bash}/bin/bash -c 'sleep 4 && ${pkgs.procps}/bin/pkill -CONT -x Hyprland'";
       SuccessExitStatus = "0 1";
     };
   };

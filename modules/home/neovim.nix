@@ -17,8 +17,8 @@
     plugins = with pkgs.vimPlugins; [
       # Core
       plenary-nvim lualine-nvim
-      # Colorschemes
-      catppuccin-nvim tokyonight-nvim nord-nvim monokai-pro-nvim
+      # Colorscheme (only catppuccin is referenced; add others back if you swap)
+      catppuccin-nvim
       # UI
       alpha-nvim noice-nvim nui-nvim nvim-notify dressing-nvim
       nvim-web-devicons bufferline-nvim indent-blankline-nvim which-key-nvim
@@ -56,8 +56,8 @@
       lua-language-server nil ruff rust-analyzer
       vscode-langservers-extracted bash-language-server
       gopls yaml-language-server marksman
-      # Formatters
-      nixpkgs-fmt alejandra stylua black isort prettierd shfmt rustfmt
+      # Formatters (alejandra dropped — conform uses nixpkgs_fmt; add back if you swap)
+      nixpkgs-fmt stylua black isort prettierd shfmt rustfmt
       # Linters
       statix deadnix shellcheck eslint_d
       # Tools

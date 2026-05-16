@@ -138,6 +138,10 @@
   services.blueman.enable = true;
   services.fwupd.enable = true;
   services.smartd.enable = true;
+  # upower — battery state on D-Bus. Consumed by waybar's battery module and
+  # perf-mode-daemon. Works via D-Bus activation, but enable explicitly so it's
+  # not load-bearing on autoload behavior.
+  services.upower.enable = true;
 
   # dconf — needed for GTK/GNOME apps (notably nemo) to persist settings.
   # Without this every launch is a fresh slate.
