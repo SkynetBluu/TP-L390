@@ -151,12 +151,11 @@ in
   };
 
   # ── Packages ──────────────────────────────────────────────────────────────
+  # wl-clipboard / wl-clipboard-x11 installed via home-manager (modules/home/home.nix)
   environment.systemPackages = with pkgs; [
     wayland
     wayland-protocols
     wayland-utils
-    wl-clipboard
-    wl-clipboard-x11
     grim
     slurp
     wf-recorder

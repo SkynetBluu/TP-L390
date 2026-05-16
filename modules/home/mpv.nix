@@ -221,7 +221,8 @@ in
     '';
     config = {
       # ── Video ──────────────────────────────────────────────────────────
-      profile = "gpu-hq";
+      # `high-quality` replaces the deprecated `gpu-hq` profile (removed in mpv 0.36)
+      profile = "high-quality";
       vo = "gpu";
       gpu-api = "opengl"; # Intel UHD 620 — opengl more stable than vulkan
       hwdec = "vaapi"; # VA-API hardware decode
@@ -354,7 +355,7 @@ in
     yts = "yt-search"; # Search YouTube with fzf
     ytp = "mpv"; # Play URL directly in mpv
     ytd = "yt-download"; # Download video
-    ytmp3 = "yt-download '' audio"; # Download audio
+    ytmp3 = "yt-mp3"; # Download audio (uses the yt-mp3 wrapper script)
     ytq = "yt-queue"; # Queue manager
     ytc = "yt-clip"; # Play clip
     ytmusic = "mpv --profile=audio-only"; # Audio-only playback

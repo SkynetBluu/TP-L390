@@ -3,6 +3,11 @@
 # to /etc/nixos/configuration.nix instead.
 { config, lib, pkgs, modulesPath, ... }:
 
+# fileSystems, swapDevices, and boot.initrd.luks.devices.* are declared by
+# disko (hosts/l390/disko-config.nix) — do not redeclare them here.
+# boot.initrd.availableKernelModules and other manual tweaks live in
+# modules/system/boot.nix.
+
 {
   imports =
     [ (modulesPath + "/installer/scan/not-detected.nix")
@@ -12,48 +17,6 @@
   boot.initrd.kernelModules = [ ];
   boot.kernelModules = [ ];
   boot.extraModulePackages = [ ];
-
-  fileSystems."/" =
-    { device = "/dev/mapper/cryptroot";
-      fsType = "btrfs";
-      options = [ "subvol=@" ];
-    };
-
-  boot.initrd.luks.devices."cryptroot".device = lib.mkForce "/dev/disk/by-uuid/f41dbd1f-962c-4e19-a876-a5be6f544d2b";
-
-  fileSystems."/.snapshots" =
-    { device = "/dev/mapper/cryptroot";
-      fsType = "btrfs";
-      options = [ "subvol=@snapshots" ];
-    };
-
-  fileSystems."/boot" =
-    { device = lib.mkForce "/dev/disk/by-uuid/66EA-3FC3";
-      fsType = "vfat";
-      options = [ "fmask=0077" "dmask=0077" ];
-    };
-
-  fileSystems."/home" =
-    { device = "/dev/mapper/cryptroot";
-      fsType = "btrfs";
-      options = [ "subvol=@home" ];
-    };
-
-  fileSystems."/nix" =
-    { device = "/dev/mapper/cryptroot";
-      fsType = "btrfs";
-      options = [ "subvol=@nix" ];
-    };
-
-  fileSystems."/var/log" =
-    { device = "/dev/mapper/cryptroot";
-      fsType = "btrfs";
-      options = [ "subvol=@log" ];
-    };
-
-  swapDevices =
-    [ { device = "/dev/mapper/cryptswap"; }
-    ];
 
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
   hardware.cpu.intel.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;

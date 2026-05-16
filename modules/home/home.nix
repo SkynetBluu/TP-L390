@@ -50,6 +50,8 @@
     mpc
     nicotine-plus
     nushell
+    wl-clipboard
+    wl-clipboard-x11
   ];
 
   # config nicotine directories
@@ -285,9 +287,9 @@
 
       misc = { force_default_wallpaper = 0; disable_hyprland_logo = true; };
 
+      # mako, swayosd-server, and hypridle are started by their own systemd
+      # user units (services.mako, systemd.user.services.swayosd, services.hypridle)
       exec-once = [
-        "hypridle"
-        "mako"
         "awww-daemon"
         "awww img $WALLPAPER"
         "wl-paste --type text --watch cliphist store"
@@ -295,7 +297,6 @@
         "blueman-applet"
         "bluelight-auto"
         "perf-mode-daemon"
-        "sleep 2 && swayosd-server"
       ];
 
       "$mod" = "SUPER";
@@ -371,7 +372,7 @@
 
         "$mod, mouse_down,  workspace, e+1"
         "$mod, mouse_up,    workspace, e-1"
-        "$mod SHIFT, E,     exec, hyprctl dispatch exit"
+        "$mod SHIFT, E,     exec, uwsm stop"
       ];
 
       bindm = [

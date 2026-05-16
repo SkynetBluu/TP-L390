@@ -55,10 +55,10 @@
   services.power-profiles-daemon.enable = false;
 
   # ── Boot / Hibernation ────────────────────────────────────────────────────
-  # resumeDevice points at the opened LUKS mapper, not a partition UUID, so it
-  # doesn't change per-install. The UUID that DOES need updating after install
-  # is `boot.initrd.luks.devices.cryptswap.device` in modules/system/boot.nix
-  # (run `blkid /dev/sda3` to get the encrypted swap partition's UUID).
+  # disko declares cryptswap (see hosts/l390/disko-config.nix) and sets
+  # resumeDevice = true on the swap content, so boot.resumeDevice is set
+  # automatically. The mkForce below pins it explicitly in case other modules
+  # also try to declare it.
   boot.resumeDevice = lib.mkForce "/dev/mapper/cryptswap";
 
   # ── Packages ──────────────────────────────────────────────────────────────
@@ -66,11 +66,10 @@
   environment.systemPackages = with pkgs; [
 
     # Desktop
-    waybar
-    rofi
+    # waybar, rofi, mako installed by their home-manager modules
+    # hypridle, hyprlock installed by programs.hyprlock / services.hypridle (modules/home/hyprlock.nix)
     cliphist
     awww
-    mako
     brightnessctl
     kdePackages.polkit-kde-agent-1
 
@@ -137,8 +136,6 @@
     # USB flasher
     popsicle
     papirus-icon-theme
-    hypridle
-    hyprlock
     yt-dlp
     yewtube
     nh

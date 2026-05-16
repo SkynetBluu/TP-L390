@@ -49,6 +49,8 @@ let
       --whitelist="$HOME/Documents" \
       --whitelist="$HOME/.config/claude" \
       --whitelist="$HOME/.local/share/claude" \
+      --whitelist="$HOME/.config/nixos" \
+      --whitelist="$HOME/.claude" \
       --whitelist="$HOME/.anthropic" \
       --whitelist=/run/current-system \
       --whitelist=/nix/store \

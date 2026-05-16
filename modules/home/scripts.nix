@@ -325,7 +325,15 @@ let
     KERNEL=$(uname -r)
     UPTIME=$(uptime -p | sed 's/up //')
     CPU_MODEL=$(${pkgs.gawk}/bin/awk -F': ' '/model name/{print $2; exit}' /proc/cpuinfo)
-    CPU_TEMP=$(cat /sys/class/hwmon/hwmon6/temp1_input 2>/dev/null | ${pkgs.gawk}/bin/awk '{printf "%.1f°C", $1/1000}' || echo "N/A")
+    # hwmonN indices aren't stable; glob the platform-rooted path instead
+    shopt -s nullglob
+    HWMON_FILES=(/sys/devices/platform/coretemp.0/hwmon/hwmon*/temp1_input)
+    shopt -u nullglob
+    if [ "''${#HWMON_FILES[@]}" -gt 0 ]; then
+      CPU_TEMP=$(${pkgs.gawk}/bin/awk '{printf "%.1f°C", $1/1000}' "''${HWMON_FILES[0]}")
+    else
+      CPU_TEMP="N/A"
+    fi
     MEM_INFO=$(free -h | ${pkgs.gawk}/bin/awk '/^Mem:/{print $3 "/" $2}')
     MEM_PERCENT=$(free | ${pkgs.gawk}/bin/awk '/^Mem:/{printf "%.0f", $3/$2*100}')
     DISK_INFO=$(df -h / | ${pkgs.gawk}/bin/awk 'NR==2{print $3 "/" $2 " (" $5 ")"}')

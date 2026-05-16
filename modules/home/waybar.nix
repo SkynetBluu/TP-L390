@@ -145,7 +145,10 @@ let
     };
 
     temperature = {
-      hwmon-path = "/sys/class/hwmon/hwmon6/temp1_input";
+      # hwmonN indices aren't stable across kernel/module load order — use the
+      # platform-rooted path so the right hwmon dir resolves regardless of N
+      hwmon-path-abs = "/sys/devices/platform/coretemp.0/hwmon";
+      input-filename = "temp1_input";
       critical-threshold = 85;
       format = " {temperatureC}°C";
       tooltip = true;

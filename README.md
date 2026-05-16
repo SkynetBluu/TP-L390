@@ -257,12 +257,6 @@ reboot
 git clone https://github.com/SkynetBluu/TP-L390.git ~/.config/nixos
 ```
 
-**Update the cryptswap UUID** in `modules/system/boot.nix`:
-```bash
-blkid /dev/sda3  # get UUID of the swap partition
-# update: cryptswap.device = lib.mkForce "/dev/disk/by-uuid/YOUR-UUID";
-```
-
 **Set up sops-nix secrets** (after first boot):
 ```bash
 sudo ssh-to-age -private-key -i /etc/ssh/ssh_host_ed25519_key

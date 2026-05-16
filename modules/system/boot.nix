@@ -16,26 +16,14 @@
     };
 
     # ── Initrd ────────────────────────────────────────────────────────────
+    # device / allowDiscards for cryptroot+cryptswap come from disko-config.nix.
+    # availableKernelModules come from hardware-configuration.nix.
+    # Only manual overrides live here.
     initrd = {
       systemd.enable = true;
 
-      availableKernelModules = [
-        "xhci_pci"    # USB 3.0
-        "ahci"        # SATA
-        "usb_storage" # USB storage
-        "sd_mod"      # SCSI disk
-      ];
-
-      luks.devices = {
-        cryptroot = {
-          device           = "/dev/disk/by-partlabel/root";
-          allowDiscards    = true;
-          bypassWorkqueues = true;
-        };
-	cryptswap = {
-	  device = lib.mkForce "/dev/disk/by-uuid/5dec3953-49d1-4e64-9013-788968bf6079";
-	  allowDiscards = true;
-	};
+      luks.devices.cryptroot = {
+        bypassWorkqueues = true; # faster I/O; disko doesn't expose this option
       };
     };
 

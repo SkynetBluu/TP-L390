@@ -12,8 +12,8 @@
       "wheel" # sudo access
       "networkmanager" # manage Wi-Fi without sudo
       "video" # screen brightness (brightnessctl)
-      "audio" # audio devices
-      "input" # input devices
+      # audio: redundant under PipeWire + RTKit
+      # input: gives raw /dev/input/* access; not needed with logind/seat handling
     ];
   };
 
