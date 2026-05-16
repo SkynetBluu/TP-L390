@@ -4,8 +4,6 @@
 { pkgs, ... }:
 
 {
-  fonts.fontconfig.enable = true;
-
   fonts.packages = with pkgs; [
     # Base fonts
     inter                  # Default sans-serif (theme.fonts.sans)
@@ -17,14 +15,13 @@
     # Icon fonts
     font-awesome           # Icons for Waybar etc.
 
-    # Nerd Fonts — terminals, Waybar, Neovim
-    nerd-fonts.jetbrains-mono  # Default monospace (theme.fonts.mono)
-    nerd-fonts.caskaydia-cove  # Cascadia Code variant
-    nerd-fonts.fira-code
-    nerd-fonts.hack
+    # Nerd Fonts — only those actually referenced in fontconfig defaultFonts below
+    nerd-fonts.jetbrains-mono  # Primary monospace (theme.fonts.mono)
+    nerd-fonts.hack            # Fallback monospace
   ];
 
   fonts.fontconfig = {
+    enable = true;
     antialias = true;
 
     defaultFonts = {

@@ -9,9 +9,11 @@ let
   # scope management — wrappedBinaries can't express these requirements
   brave-wayland = pkgs.brave.override {
     commandLineArgs = [
-      "--ozone-platform=wayland"
+      # --ozone-platform-hint=wayland is the modern way; it auto-falls-back to
+      # X11 if Wayland isn't available. UseOzonePlatform / --ozone-platform=...
+      # are implied by the hint, so they're not needed.
       "--ozone-platform-hint=wayland"
-      "--enable-features=TouchpadOverscrollHistoryNavigation,UseOzonePlatform,WaylandWindowDecorations"
+      "--enable-features=TouchpadOverscrollHistoryNavigation,WaylandWindowDecorations"
       # AsyncDns + DoH disabled so name resolution flows through systemd-resolved
       # (DNSSEC + fallback DNS configured in modules/system/networking.nix).
       # Without this, Brave does its own DNS and bypasses the resolved stack.

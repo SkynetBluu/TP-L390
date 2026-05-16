@@ -29,6 +29,7 @@
     ./waybar.nix
     ./rofi.nix
     ./mpv.nix
+    ./mpd.nix
     ./yazi.nix
     ./ghostty.nix
     ./zellij.nix
@@ -42,7 +43,6 @@
     ripgrep
     fd
     jq
-    fzf
     unzip
     zip
     p7zip
@@ -57,6 +57,8 @@
     nushell
     wl-clipboard
     wl-clipboard-x11
+    papirus-icon-theme # used by rofi (rofi.nix sets icon-theme = "Papirus-Dark")
+    # fzf is installed via programs.fzf below (which also handles bash integration)
   ];
 
   # config nicotine directories
@@ -188,12 +190,12 @@
       # Claude Code update helper
       update-claude-code = "echo 'Update overlays/claude-code-latest.nix with latest version and hash'";
     };
-
-    bashrcExtra = ''
-      eval "$(starship init bash)"
-      eval "$(fzf --bash)"
-    '';
+    # starship + fzf bash integration is handled by their HM modules
+    # (programs.starship.enableBashIntegration / programs.fzf.enableBashIntegration,
+    # both default-true). No bashrcExtra needed.
   };
+
+  programs.fzf.enable = true;
 
   # ── Starship prompt ───────────────────────────────────────────────────────
 

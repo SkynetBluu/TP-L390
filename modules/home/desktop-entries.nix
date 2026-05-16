@@ -24,11 +24,9 @@ in
   home.packages = [
     nvim-launcher
     hx-launcher
-    pkgs.popsicle # USB flasher
-    pkgs.parted
-    pkgs.gparted
-    pkgs.ntfs3g
-    pkgs.exfatprogs
+    pkgs.popsicle # USB flasher — paired with the .desktop entry below
+    # parted/gparted/ntfs3g/exfatprogs live in environment.systemPackages
+    # (configuration.nix) so they're usable from a TTY / recovery shell
   ];
 
   xdg.desktopEntries = {

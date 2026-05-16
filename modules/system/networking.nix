@@ -21,16 +21,17 @@
     };
   };
 
-  # DNS — use systemd-resolved with DNSSEC
+  # DNS — use systemd-resolved with DNSSEC + opportunistic DoT
   services.resolved = {
     enable = true;
     settings.Resolve = {
       DNSSEC = "allow-downgrade";
+      DNSOverTLS = "opportunistic"; # encrypt to FallbackDNS / per-link DNS when supported
       Domains = [ "~." ];
       FallbackDNS = [
-        "9.9.9.9"
-        "149.112.112.112"
-        "2620:fe::fe"
+        "9.9.9.9"          # Quad9 primary IPv4
+        "149.112.112.112"  # Quad9 secondary IPv4
+        "2620:fe::fe"      # Quad9 primary IPv6
       ];
     };
   };

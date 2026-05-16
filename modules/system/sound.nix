@@ -50,8 +50,10 @@
     pulse.enable = true; # PulseAudio compatibility layer
     jack.enable = false; # Enable if you need JACK (music production)
 
-    # Low-latency config — good default for a laptop
-    extraConfig.pipewire."92-low-latency" = {
+    # Comfortable laptop default. The 1024 quantum is NOT low-latency
+    # (real low-latency starts around 256). Apps that actually need lower
+    # latency can request down to min-quantum=32 on a per-stream basis.
+    extraConfig.pipewire."92-laptop-defaults" = {
       context.properties = {
         default.clock.rate = 48000;
         default.clock.quantum = 1024;

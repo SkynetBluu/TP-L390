@@ -138,14 +138,19 @@ in
   };
 
 
-  systemd.user.services.plasma-polkit-agent = {
-    description = "Plasma PolicyKit Authentication Agent";
+  # Polkit authentication agent — Hyprland-native, runs as a user service
+  # under graphical-session.target. Replaces the heavier polkit-kde-agent.
+  # (security.polkit.enable is set in modules/system/security.nix.)
+  # No `services.hyprpolkitagent` module exists in nixpkgs yet, so wire the
+  # binary directly via systemd.user.services.
+  systemd.user.services.hyprpolkitagent = {
+    description = "Hyprland Polkit Authentication Agent";
     wantedBy = [ "graphical-session.target" ];
     wants = [ "graphical-session.target" ];
     after = [ "graphical-session.target" ];
     serviceConfig = {
       Type = "simple";
-      ExecStart = "${pkgs.kdePackages.polkit-kde-agent-1}/libexec/polkit-kde-authentication-agent-1";
+      ExecStart = "${pkgs.hyprpolkitagent}/libexec/hyprpolkitagent";
       Restart = "on-failure";
       RestartSec = 1;
       TimeoutStopSec = 10;

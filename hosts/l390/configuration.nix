@@ -60,36 +60,33 @@
 
   # ── Boot / Hibernation ────────────────────────────────────────────────────
   # disko declares cryptswap (see hosts/l390/disko-config.nix) and sets
-  # resumeDevice = true on the swap content, so boot.resumeDevice is set
-  # automatically. The mkForce below pins it explicitly in case other modules
-  # also try to declare it.
-  boot.resumeDevice = lib.mkForce "/dev/mapper/cryptswap";
+  # resumeDevice = true on the swap content, which causes disko to set
+  # boot.resumeDevice to /dev/mapper/cryptswap automatically. No manual
+  # declaration needed here.
 
   # ── Packages ──────────────────────────────────────────────────────────────
 
+  # Packages live in three places:
+  #   - environment.systemPackages here    → system-wide, available pre-login (rescue shell, recovery)
+  #   - home.packages (modules/home/*.nix) → user-only, requires a logged-in session
+  #   - programs.X / services.X            → home-manager modules with config attached
+  #
+  # Anything user-facing with a home-manager config (alacritty, mpv, etc.) lives
+  # in home. Packages that should work from a TTY / recovery shell live here.
   environment.systemPackages = with pkgs; [
 
-    # Desktop
-    # waybar, rofi, mako installed by their home-manager modules
-    # hypridle, hyprlock installed by programs.hyprlock / services.hypridle (modules/home/hyprlock.nix)
+    # Desktop daemons / system applets (must be on system PATH so root services can call them too)
     cliphist
     awww
     brightnessctl
-    kdePackages.polkit-kde-agent-1
+    # polkit agent: hyprpolkitagent (Hyprland-native, lighter than polkit-kde)
+    # is enabled via services.hyprpolkitagent in modules/system/hyprland.nix
 
-    # Core utilities
+    # Core utilities — kept system-wide so they exist in single-user / recovery boots
     git
     wget
     curl
-    unzip
-    zip
     htop
-    btop
-    tree
-    ripgrep
-    fd
-    jq
-    fzf
     vim
     nano
 
@@ -108,28 +105,23 @@
     # Networking
     networkmanagerapplet
 
-    # Disk tools
+    # Disk-rescue set — keep on system PATH so they work from a TTY without a user session
     parted
     gparted
     ntfs3g
     exfatprogs
 
-    # Terminal
-    alacritty
-
-    # Editors
+    # Editors (system-wide fallback; helix + nvim home configs live in home modules)
     vscode
     neovim
 
-    # Wayland
-    wl-clipboard
-    wl-clipboard-x11
+    # Wayland system tools (user-facing wl-clipboard lives in home)
     xdg-utils
 
-    # Media
+    # Media — system-wide because they're used by services / root contexts too
     playerctl
     pavucontrol
-    inputs.nt-helper.packages.${pkgs.system}.default
+    inputs.nt-helper.packages.${pkgs.stdenv.hostPlatform.system}.default
 
     # Bluetooth
     blueman
@@ -137,11 +129,7 @@
     # Firmware updates
     fwupd
 
-    # USB flasher
-    popsicle
-    papirus-icon-theme
-    # yt-dlp installed as firejail wrapper via security.nix wrappedBinaries
-    yewtube
+    # Nix helper
     nh
   ];
 
@@ -155,32 +143,9 @@
   # Without this every launch is a fresh slate.
   programs.dconf.enable = true;
 
-  # ── Services ── mpd ──────────────────────────────────────────────────────
-
-  services.mpd = {
-    enable = true;
-    user = "nimbus";
-    settings = {
-      music_directory = "/share/slsk/share";
-      audio_output = [{
-        type = "pipewire";
-        name = "PipeWire";
-      }];
-
-      # Save state, so playlist/position survives restart
-      auto_update = "yes";
-      restore_paused = "yes";
-      filesystem_charset = "UTF-8";
-    };
-    # default network setup is fine: localhost:6600
-  };
-
-  # MPD runs as a system service but needs to reach PipeWire's user socket.
-  # Derive the UID from users.users.nimbus.uid so this stays correct if pinned
-  # to a non-1000 value.
-  systemd.services.mpd.environment = {
-    XDG_RUNTIME_DIR = "/run/user/${toString config.users.users.nimbus.uid}";
-  };
+  # MPD now runs as a user service via home-manager (see modules/home/mpd.nix).
+  # It composes naturally with the user PipeWire session and avoids the
+  # /run/user/<uid> race during boot.
 
   # ── Services ── slsk ─────────────────────────────────────────────────────
 
