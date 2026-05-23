@@ -89,6 +89,7 @@
           ./modules/system/users.nix
           ./modules/system/fonts.nix
           ./modules/system/security.nix
+          ./modules/system/claude.nix
 
           # Secrets management
           sops-nix.nixosModules.sops

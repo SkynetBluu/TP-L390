@@ -39,40 +39,6 @@ let
     fi
   '';
 
-  # ── Claude Code ───────────────────────────────────────────────────────────
-  claude-wrapper = pkgs.writeShellScriptBin "claude" ''
-    FIREJAIL=/run/wrappers/bin/firejail
-    CLAUDE=${pkgs.claude-code}/bin/claude
-    SYSTEMD_RUN="${pkgs.systemd}/bin/systemd-run --user --quiet --scope --slice=app-claude.slice"
-
-    exec $SYSTEMD_RUN "$FIREJAIL" \
-      --noprofile \
-      --whitelist="$HOME/projects" \
-      --whitelist="$HOME/Documents" \
-      --whitelist="$HOME/.config/claude" \
-      --whitelist="$HOME/.local/share/claude" \
-      --whitelist="$HOME/.config/nixos" \
-      --whitelist="$HOME/.claude" \
-      --whitelist="$HOME/.anthropic" \
-      --whitelist=/run/current-system \
-      --whitelist=/nix/store \
-      --private-etc=ssl,static,hosts,nsswitch.conf \
-      --dns=1.1.1.1 \
-      --dns=1.0.0.1 \
-      --env=HOME="$HOME" \
-      --env=DISABLE_AUTOUPDATER=1 \
-      --env=DISABLE_UPDATES=1 \
-      --caps.drop=all \
-      --nonewprivs \
-      --noroot \
-      --nosound \
-      --novideo \
-      --private-tmp \
-      --protocol=unix,inet,inet6 \
-      "$CLAUDE" "$@"
-
-  '';
-
 in
 {
   # ── Firejail ──────────────────────────────────────────────────────────────
@@ -100,8 +66,9 @@ in
     };
   };
 
-  # Brave and Claude use shell wrappers (not wrappedBinaries) because they
-  # need sandbox join logic and systemd scope management
+  # Brave uses a shell wrapper (not wrappedBinaries) because it
+  # needs sandbox join logic and systemd scope management.
+  # Claude is no longer here — it runs as its own user; see modules/system/claude.nix.
 
   # ── AppArmor ──────────────────────────────────────────────────────────────
   security.apparmor.enable = true;
@@ -142,7 +109,6 @@ in
   # above — don't list the raw packages here or you'll collide on /run/current-system/sw/bin.
   environment.systemPackages = [
     brave-wrapper
-    claude-wrapper
     pkgs.libsecret
   ];
 }
