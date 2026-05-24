@@ -15,7 +15,7 @@ STAMP=$(date +%Y-%m-%d-%H%M%S)
 BUNDLE_NAME=promote-claude-home-$STAMP
 BUNDLE_DIR=$BUNDLE_PARENT/$BUNDLE_NAME
 
-ITEMS=(CLAUDE.md settings.json memory)
+ITEMS=(CLAUDE.md settings.json memory skills)
 
 mkdir -p "$BUNDLE_DIR"
 
