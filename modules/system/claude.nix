@@ -106,6 +106,13 @@ in
     "d ${claudeHome}/workspace/claude-sandbox 0750 claude claude-shared - -"
     "d ${projectsDst} 0750 claude claude-shared - -"
 
+    # Source of the projects bind mount (nimbus-side). Re-asserted on every
+    # rebuild so it can't drift: nimbus-owned, group claude-shared, setgid
+    # so new entries inherit the group, with a default ACL granting
+    # claude-shared rwX on inherited entries.
+    "d ${projectsSrc} 2770 nimbus claude-shared - -"
+    "A+ ${projectsSrc} - - - - d:group:claude-shared:rwX"
+
     # Default ACL: anything claude creates under its home stays readable by
     # the claude-shared group (so nimbus can always inspect it), without
     # making it group-writable. Capital X = dirs get +x, files don't.

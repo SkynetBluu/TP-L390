@@ -69,32 +69,28 @@ qbittorrent wrappedBinaries, AppArmor, polkit, sudo, PAM, GNOME Keyring.
 ## One-time setup (run as nimbus)
 
 ```bash
-# 1. Make the bind-mount sources world-readable. The kernel enforces the
-#    file inode's mode bits even through a bind mount, so 0600 files (the
-#    default if your umask is 077) deny claude read access on its side.
-chmod 644 ~/.config/nixos/claude-sandbox/{flake.nix,devshell.nix,packages.nix} \
-          ~/.config/nixos/overlays/claude-code-latest.nix
+# 1. Make every file in claude-sandbox/ world-readable. The kernel enforces
+#    the inode's mode bits through the dir bind, so 0600 files (the default
+#    if your umask is 077) deny claude read access on the sandbox side —
+#    and pure-mode flake evaluation aborts when it can't copy the dir.
+chmod -R a+rX ~/.config/nixos/claude-sandbox
 
-# 2. Create the projects source dir, group-owned so claude can write into it
-#    through the bind mount, with setgid + default ACL so new files stay shared.
-mkdir -p ~/claude-projects
-sudo chgrp claude-shared ~/claude-projects
-chmod 2770 ~/claude-projects                       # setgid: new files inherit group
-setfacl -d -m g:claude-shared:rwX ~/claude-projects
-
-# 3. Lock the devShell flake (generates claude-sandbox/flake.lock).
+# 2. Lock the devShell flake (generates claude-sandbox/flake.lock).
 cd ~/.config/nixos/claude-sandbox
 nix flake lock
 chmod 644 flake.lock
 
-# 4. Rebuild so the user, mounts, and polkit rule exist.
+# 3. Rebuild so the user, mounts, polkit rule, and the
+#    /home/nimbus/claude-projects tmpfiles rule all exist. The rebuild
+#    creates ~/claude-projects with the right owner/group/mode/ACL — no
+#    manual mkdir/chmod/setfacl required.
 sudo nixos-rebuild switch --flake ~/.config/nixos#l390
 
-# 5. Re-login (or `exec su - nimbus`). The rebuild added you to the
+# 4. Re-login (or `exec su - nimbus`). The rebuild added you to the
 #    claude-shared group, but existing shells keep their original supplementary
 #    groups — without this, ls /home/claude/.claude returns Permission denied.
 
-# 6. Seed claude's home baseline (Tier 1). Manual, by design.
+# 5. Seed claude's home baseline (Tier 1). Manual, by design.
 sudo cp -rT ~/.config/nixos/claude-home /home/claude/.claude
 sudo chown -R claude:claude /home/claude/.claude
 ```
