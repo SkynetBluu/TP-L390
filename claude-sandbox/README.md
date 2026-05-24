@@ -93,6 +93,16 @@ sudo nixos-rebuild switch --flake ~/.config/nixos#l390
 # 5. Seed claude's home baseline (Tier 1). Manual, by design.
 sudo cp -rT ~/.config/nixos/claude-home /home/claude/.claude
 sudo chown -R claude:claude /home/claude/.claude
+
+# 6. Drop in claude's Forgejo access token. Per-machine secret — NEVER in
+#    the baseline. Replace PASTE_TOKEN_HERE with the token from Forgejo.
+sudo -u claude bash -c 'umask 077 && cat > /home/claude/.netrc' <<EOF
+machine 192.168.1.3
+login clawed
+password PASTE_TOKEN_HERE
+EOF
+sudo -u claude setfacl -b /home/claude/.netrc   # strip inherited ACL
+sudo -u claude chmod 600 /home/claude/.netrc
 ```
 
 ## Daily use
@@ -120,7 +130,35 @@ inside the directory (almost every editor, `nix flake lock`, etc.) propagate
 without a mount-unit restart — no `fix-stale-mounts` dance required. A fresh
 `nix develop` is enough to pick up the new contents.
 
-## Promoting changes back (manual)
+## Promoting changes back
+
+Two scripts packaged in the devShell handle the sandbox → host flow.
+Claude runs them from inside the sandbox; each prints the exact host
+command for you to copy-paste.
+
+**Sandbox state → claude-home baseline** (`CLAUDE.md`, `settings.json`,
+`memory/`, `skills/`):
+
+```bash
+# Inside the sandbox:
+promote-claude-home
+# → prints a `cp -rT ~/claude-projects/<bundle> ~/.config/nixos/claude-home/` line.
+# Run that on the host, then review `git diff claude-home/` and commit.
+```
+
+**Sandbox-side nixos clone → live `~/.config/nixos/`** (any worktree change
+claude made in `~/workspace/projects/my-conf/nixos/`):
+
+```bash
+# Inside the sandbox:
+promote-nixos
+# → prints `cp -rT` + `git add` (+ `git rm` for deletions) + status.
+# Run that on the host, then `rebuild`.
+```
+
+**Per-machine secrets** (`~/.netrc` Forgejo token, anything similar) are
+**never** promoted by either script — their allowlists explicitly exclude
+them. Set them once per machine via the One-time setup steps above.
 
 **A tool claude wanted permanently** — check its log, add to `packages.nix`,
 commit:
@@ -129,13 +167,6 @@ commit:
 cat /home/claude/workspace/tool-usage.log     # nimbus can read claude's home
 # edit ~/.config/nixos/claude-sandbox/packages.nix, then:
 cd ~/.config/nixos && git add -p && git commit
-```
-
-**A settings/skill change worth keeping** — copy it out, diff, commit:
-
-```bash
-cp /home/claude/.claude/settings.json ~/.config/nixos/claude-home/settings.json
-cd ~/.config/nixos && git diff claude-home/   # review before committing
 ```
 
 **Pushing an updated baseline back into claude's home** (does NOT happen

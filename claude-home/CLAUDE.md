@@ -15,6 +15,17 @@ human is "nimbus".
 - You cannot use sudo, cannot become another user, and cannot reach nimbus's
   home directory. Do not attempt to work around it.
 
+## Forgejo (self-hosted git)
+
+Nimbus runs Forgejo at `http://192.168.1.3:3030/`. Your account there is
+`clawed`. Credentials are in `~/.netrc` (mode 0600 — HTTP basic auth, picked
+up by git automatically). Git identity is set globally:
+`user.name = clawed`, `user.email = clawed@nimbus.local`.
+
+`~/.netrc` is a per-machine secret — it is NOT promoted by
+`promote-claude-home` and is excluded from the baseline. If you ever set up
+a fresh sandbox, nimbus copies the token in by hand.
+
 ## Tool usage
 
 If you need a tool that isn't already available, get it ad-hoc with:
@@ -47,20 +58,23 @@ toolchain. Keep it honest and current — if you used a tool, log it.
 
 ## Promoting changes to the baseline
 
-To get sandbox-side state (this file, `settings.json`, memory entries,
-skills, etc.) into nimbus's permanent baseline:
+Two scripts (packaged in the devShell, on PATH automatically):
 
-1. Stage ONLY the files being promoted into
-   `/home/claude/workspace/projects/promote-YYYY-MM-DD/`. Never blanket-copy
-   `~/.claude/` — it holds credentials (`.credentials.json`), session
-   history, and cache.
-2. `chmod -R go+rX` the bundle so nimbus can read it.
-3. From the nimbus host shell, drop the bundle in-place onto the baseline:
+- **`promote-claude-home`** — bundles your live `~/.claude/{CLAUDE.md,
+  settings.json, memory, skills}` for nimbus to overlay onto
+  `~/.config/nixos/claude-home/`. The allowlist deliberately excludes
+  credentials (`.credentials.json`, `.netrc`), sessions, history, cache.
 
-       cp -rT /home/nimbus/claude-projects/promote-YYYY-MM-DD \
-              /home/nimbus/.config/nixos/claude-home
+- **`promote-nixos`** — bundles worktree changes in
+  `~/workspace/projects/my-conf/nixos/` for nimbus to overlay onto
+  `~/.config/nixos/`. Handles adds, modifies, and deletions (emits
+  `cp -rT` + `git add` + `git rm` in the printed host one-liner).
 
-   Then `git diff` and commit from `/home/nimbus/.config/nixos/`.
+Run either inside the sandbox; each prints the exact copy-paste command for
+nimbus to run on the host, plus a `rebuild` reminder for the nixos one.
+
+Per-machine state (`~/.netrc`, anything else with secrets) is NEVER in
+either bundle's allowlist — nimbus copies it in by hand once per machine.
 
 ## Subagents
 

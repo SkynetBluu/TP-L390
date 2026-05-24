@@ -40,26 +40,21 @@
       "Bash(rg *)",
       "Bash(fd *)",
       "Bash(jq *)",
-      "Bash(git status *)",
-      "Bash(git log *)",
-      "Bash(git diff *)",
-      "Bash(git show *)",
-      "Bash(git branch *)",
-      "Bash(git remote *)",
-      "Bash(git blame *)",
-      "Bash(git ls-files *)",
+      "Bash(rm *)",
+      "Bash(git *)",
+      "Bash(promote-nixos)",
+      "Bash(promote-claude-home)",
       "Bash(nix shell *)",
       "Bash(nix develop *)",
       "Bash(nix flake *)",
       "WebFetch",
       "WebSearch",
+      "Read(/home/claude/.claude/**)",
       "Edit(/home/claude/.claude/**)",
       "Write(/home/claude/.claude/**)",
+      "Read(.claude/**)",
       "Edit(.claude/**)",
       "Write(.claude/**)"
-    ],
-    "deny": [
-      "Bash(rm -rf *)"
     ]
   }
 }
