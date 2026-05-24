@@ -1,0 +1,100 @@
+#!/usr/bin/env bash
+# promote-nixos
+# Bundle worktree changes (M/A/??/D) from the sandbox-side my-conf clone so
+# they can be applied onto ~/.config/nixos from a host shell. Prints the
+# exact command block to copy-paste.
+#
+# Direction: sandbox → host. The sandbox files replace the host files.
+# Additions and modifications go through cp -rT; deletions go through
+# `git rm`. Renames are flagged as warnings — handle by hand.
+
+set -euo pipefail
+
+CLONE=/home/claude/workspace/projects/my-conf/nixos
+BUNDLE_PARENT=/home/claude/workspace/projects
+STAMP=$(date +%Y-%m-%d-%H%M%S)
+BUNDLE_NAME=promote-nixos-$STAMP
+BUNDLE_DIR=$BUNDLE_PARENT/$BUNDLE_NAME
+
+if [ ! -d "$CLONE/.git" ]; then
+  echo "promote-nixos: no git repo at $CLONE" >&2
+  exit 1
+fi
+
+# Clone is nimbus-owned; git refuses to operate on it from claude without this.
+git_safe() { git -c safe.directory="$CLONE" "$@"; }
+
+mapfile -t LINES < <(git_safe -C "$CLONE" status --porcelain)
+
+ADD_PATHS=()
+DEL_PATHS=()
+for line in "${LINES[@]}"; do
+  st=${line:0:2}
+  rest=${line:3}
+  case "$st" in
+    R*|C*)     echo "promote-nixos: skipping rename/copy: $line" >&2; continue ;;
+    " D"|"D ") DEL_PATHS+=("$rest") ;;
+    *)         ADD_PATHS+=("$rest") ;;
+  esac
+done
+
+if [ "${#ADD_PATHS[@]}" -eq 0 ] && [ "${#DEL_PATHS[@]}" -eq 0 ]; then
+  echo "promote-nixos: nothing to promote (worktree clean)" >&2
+  exit 0
+fi
+
+mkdir -p "$BUNDLE_DIR"
+for p in "${ADD_PATHS[@]}"; do
+  # Untracked dirs from `git status` have a trailing slash.
+  p=${p%/}
+  src=$CLONE/$p
+  dst=$BUNDLE_DIR/$p
+  if [ ! -e "$src" ]; then
+    echo "promote-nixos: skip $p (missing in clone)" >&2
+    continue
+  fi
+  mkdir -p "$(dirname "$dst")"
+  cp -rT "$src" "$dst"
+done
+
+chmod -R go+rX "$BUNDLE_DIR"
+
+add_args=""
+for p in "${ADD_PATHS[@]}"; do
+  p=${p%/}
+  add_args+=" $(printf '%q' "$p")"
+done
+
+rm_args=""
+for p in "${DEL_PATHS[@]}"; do
+  rm_args+=" $(printf '%q' "$p")"
+done
+
+# Build the host command. cp first (overlays the additions), then
+# `git rm` for deletions, then `git add` for the rest, then status.
+{
+  echo
+  echo "Bundle staged at: ~/claude-projects/$BUNDLE_NAME"
+  echo "Add/modify: ${#ADD_PATHS[@]}    Delete: ${#DEL_PATHS[@]}"
+  echo
+  echo "Run from a nimbus host shell:"
+  echo
+  prefix="  "
+  cont=" && \\"
+  printed_any=0
+
+  if [ "${#ADD_PATHS[@]}" -gt 0 ]; then
+    echo "${prefix}cp -rT ~/claude-projects/$BUNDLE_NAME ~/.config/nixos/${cont}"
+    echo "${prefix}  git -C ~/.config/nixos add$add_args${cont}"
+    printed_any=1
+  fi
+  if [ "${#DEL_PATHS[@]}" -gt 0 ]; then
+    echo "${prefix}  git -C ~/.config/nixos rm$rm_args${cont}"
+    printed_any=1
+  fi
+  if [ "$printed_any" = 1 ]; then
+    echo "${prefix}  git -C ~/.config/nixos status --short"
+  fi
+  echo
+  echo "Then: rebuild"
+}

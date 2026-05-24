@@ -29,7 +29,7 @@ let
 
     exec ${pkgs.systemd}/bin/machinectl shell claude@ \
       /run/current-system/sw/bin/bash -lc \
-      'cd "$0" && exec nix develop /home/claude/workspace -c claude "$@"' \
+      'cd "$0" && exec nix develop /home/claude/workspace/claude-sandbox -c claude "$@"' \
       "$CLAUDE_DIR" "$@"
   '';
 

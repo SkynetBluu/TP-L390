@@ -45,7 +45,7 @@
       sharedOverlays = [
         # Claude Code — latest prebuilt binary from npm
         (final: prev: {
-          claude-code = import ./overlays/claude-code-latest.nix {
+          claude-code = import ./claude-sandbox/claude-code-latest.nix {
             inherit (prev) lib fetchurl claude-code patchelf glibc stdenv;
           };
         })

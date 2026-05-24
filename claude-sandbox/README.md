@@ -8,25 +8,26 @@ nimbus-owned directory bind-mounted read-write. Home state is managed by hand.
 
 ```
 /home/nimbus/.config/nixos/
-├── claude-sandbox/              # nimbus-owned; bind-mounted RO into claude
+├── claude-sandbox/              # nimbus-owned; whole dir bind-mounted RO into claude
 │   ├── flake.nix
 │   ├── flake.lock               # generated on first `nix flake lock` (see setup)
 │   ├── devshell.nix             # env + shellHook (load-bearing)
 │   ├── packages.nix             # the locked toolchain — single source of truth
-│   └── fix-stale-mounts.sh      # recovery / refresh helper (see Daily use)
+│   ├── scripts.nix              # sandbox-internal helpers on PATH in the devShell
+│   ├── promote-nixos            # sandbox → host bundling script (bash source)
+│   ├── promote-claude-home      # same, for the claude-home baseline
+│   └── claude-code-latest.nix   # the claude-code overlay (also imported by system flake)
 ├── claude-home/                 # Tier 1 baseline; copied by hand into ~claude/.claude
 │   ├── CLAUDE.md
 │   └── settings.json
-├── overlays/claude-code-latest.nix  # also bind-mounted into claude's workspace
 └── modules/system/claude.nix    # the user, group, perms, polkit, mounts
 
 /home/nimbus/claude-projects/    # nimbus owns; bind-mounted RW -> claude workspace
 /home/claude/                    # claude:claude-shared 0750 (nimbus can read)
 └── workspace/
-    ├── flake.nix  flake.lock  devshell.nix  packages.nix    # RO bind mounts
-    ├── claude-code-latest.nix                                # RO bind mount of overlay
-    ├── projects/                                             # RW bind mount
-    └── tool-usage.log                                        # claude's wishlist
+    ├── claude-sandbox/          # RO dir bind mount of nimbus's claude-sandbox/
+    ├── projects/                # RW bind mount
+    └── tool-usage.log           # claude's wishlist
 ```
 
 ## Integration into your flake
@@ -101,29 +102,27 @@ sudo chown -R claude:claude /home/claude/.claude
 ## Daily use
 
 ```bash
-machinectl shell claude@           # drop into claude's session (no password)
-cd ~/workspace                     # = /home/claude/workspace
-nix develop                        # enter the pinned toolchain
-claude                             # run the agent
+claude-run                         # one-shot: machinectl + nix develop + claude
 ```
 
-`nix develop` reads the RO-mounted flake. To get a one-off tool without
-leaving the shell: `nix shell nixpkgs#<tool>`.
+Or step by step:
+
+```bash
+machinectl shell claude@                       # drop into claude's session (no password)
+nix develop /home/claude/workspace/claude-sandbox   # enter the pinned toolchain
+claude                                         # run the agent
+```
+
+`nix develop` reads the RO-mounted flake at `~claude/workspace/claude-sandbox`.
+To get a one-off tool without leaving the shell: `nix shell nixpkgs#<tool>`.
 
 ### After editing the bind-mounted source files
 
-Any edit to `flake.nix`, `flake.lock`, `devshell.nix`, `packages.nix`, or
-`overlays/claude-code-latest.nix` that goes through an atomic write
-(tmp + rename — almost every editor and `nix flake lock` itself) leaves
-claude's bind mount pointing at the old, now-orphaned inode. Refresh:
-
-```bash
-bash ~/.config/nixos/claude-sandbox/fix-stale-mounts.sh
-```
-
-The script is idempotent: it restarts each of the five file bind mounts
-(picking up the new inode), and if any target ever ended up as a directory
-instead of a file, it rmdir's + recreates the file before remounting.
+The whole `claude-sandbox/` directory is exposed as a single read-only
+*directory* bind mount, not as individual file binds. Atomic file rewrites
+inside the directory (almost every editor, `nix flake lock`, etc.) propagate
+without a mount-unit restart — no `fix-stale-mounts` dance required. A fresh
+`nix develop` is enough to pick up the new contents.
 
 ## Promoting changes back (manual)
 
@@ -162,7 +161,7 @@ sudo passwd -S claude                        # 'L' (locked)
 getent group claude-shared                   # lists nimbus and claude
 stat -c '%U:%G %a' /home/claude              # claude:claude-shared 750
 machinectl shell claude@ /bin/sh -c 'echo $DISPLAY; id'   # DISPLAY empty; uid 9000
-findmnt -t none | grep claude/workspace      # 5 file binds (ro) + 1 dir bind (rw)
+findmnt -t none | grep claude/workspace      # 1 dir bind (ro, claude-sandbox) + 1 dir bind (rw, projects)
 # nimbus can read claude's home, but claude cannot read nimbus's:
 ls /home/claude/.claude                      # works (group read via claude-shared)
 machinectl shell claude@ /bin/sh -c 'cat /home/nimbus/.ssh/* 2>&1 | head -1'  # Permission denied

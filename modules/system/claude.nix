@@ -47,19 +47,19 @@ let
 
   claudeHome = "/home/claude";
 
-  # The flake lives in nimbus's repo. These files are exposed read-only into
-  # claude's workspace so `nix develop` works but claude can't edit them.
-  flakeSrc    = "/home/nimbus/.config/nixos/claude-sandbox";
-  overlaysSrc = "/home/nimbus/.config/nixos/overlays";
+  # The flake lives in nimbus's repo. The whole directory is exposed read-only
+  # into claude's workspace so `nix develop` works but claude can't edit it.
+  flakeSrc = "/home/nimbus/.config/nixos/claude-sandbox";
 
   # The project area. nimbus owns this directory; it is bind-mounted into
   # claude's workspace read-write so claude can edit code and nimbus can commit.
   projectsSrc = "/home/nimbus/claude-projects";
   projectsDst = "${claudeHome}/workspace/projects";
 
-  # Helper: a read-only bind mount of a single file from the repo into claude's
-  # workspace. The attribute name (the mountpoint) is the destination; this just
-  # supplies the source + options. `nofail` so a missing source can't wedge boot.
+  # Helper: a read-only bind mount from the repo into claude's workspace.
+  # The attribute name (the mountpoint) is the destination; this just supplies
+  # the source + options. `nofail` so a missing source can't wedge boot.
+  # Works for both files and directories (the kernel figures it out).
   roBind = src: {
     device = src;
     fsType = "none";
@@ -76,15 +76,15 @@ in
 
   users.users.claude = {
     isNormalUser = true;
-    description  = "Claude Code sandbox runtime";
-    uid          = claudeUid;
-    group        = "claude";
-    extraGroups  = [ "claude-shared" ];
-    home         = claudeHome;
-    createHome   = true;
+    description = "Claude Code sandbox runtime";
+    uid = claudeUid;
+    group = "claude";
+    extraGroups = [ "claude-shared" ];
+    home = claudeHome;
+    createHome = true;
     # 0750 so the claude-shared group (nimbus) can read; 'other' gets nothing.
-    homeMode     = "0750";
-    shell        = pkgs.bashInteractive;
+    homeMode = "0750";
+    shell = pkgs.bashInteractive;
 
     # Locked: never logged into via password. Reached only via
     # `machinectl shell claude@`. Also no SSH keys (see openssh below).
@@ -103,17 +103,8 @@ in
 
     # Workspace skeleton (so the bind-mount targets exist before mounting).
     "d ${claudeHome}/workspace 0750 claude claude-shared - -"
+    "d ${claudeHome}/workspace/claude-sandbox 0750 claude claude-shared - -"
     "d ${projectsDst} 0750 claude claude-shared - -"
-
-    # Pre-create the bind-mount target files. Without these, if the source
-    # is ever missing at first mount, systemd-mount auto-materializes the
-    # target as a *directory* — and then bind-mount file→dir fails forever
-    # after. `f` creates the file if absent, leaves it alone if present.
-    "f ${claudeHome}/workspace/flake.nix              0644 claude claude-shared - -"
-    "f ${claudeHome}/workspace/flake.lock             0644 claude claude-shared - -"
-    "f ${claudeHome}/workspace/devshell.nix           0644 claude claude-shared - -"
-    "f ${claudeHome}/workspace/packages.nix           0644 claude claude-shared - -"
-    "f ${claudeHome}/workspace/claude-code-latest.nix 0644 claude claude-shared - -"
 
     # Default ACL: anything claude creates under its home stays readable by
     # the claude-shared group (so nimbus can always inspect it), without
@@ -140,18 +131,18 @@ in
     });
   '';
 
-  # ── Bind mounts: flake (read-only) + projects (read-write) ─────────────────
+  # ── Bind mounts: claude-sandbox flake (read-only) + projects (read-write) ─
   #
-  # The flake's files are exposed read-only so `nix develop` resolves them but
-  # claude cannot modify its own toolchain definition. claude-code-latest.nix
-  # is bind-mounted alongside flake.nix (not as ../overlays/...) so that pure-
-  # mode evaluation, which copies the workspace dir to /nix/store/.../source,
-  # still finds it via a local-relative path inside the flake.
-  fileSystems."${claudeHome}/workspace/flake.nix"               = roBind "${flakeSrc}/flake.nix";
-  fileSystems."${claudeHome}/workspace/flake.lock"              = roBind "${flakeSrc}/flake.lock";
-  fileSystems."${claudeHome}/workspace/devshell.nix"            = roBind "${flakeSrc}/devshell.nix";
-  fileSystems."${claudeHome}/workspace/packages.nix"            = roBind "${flakeSrc}/packages.nix";
-  fileSystems."${claudeHome}/workspace/claude-code-latest.nix"  = roBind "${overlaysSrc}/claude-code-latest.nix";
+  # The whole claude-sandbox directory is exposed read-only as a single dir
+  # bind. Anything nimbus drops into the source dir becomes visible to claude
+  # immediately, and atomic file rewrites in the source propagate without a
+  # mount-unit restart (the per-file bind stale-inode problem doesn't apply
+  # to dir binds for files contained within them).
+  #
+  # claude-code-latest.nix lives inside claude-sandbox/ (it used to be in
+  # nixos/overlays/ with a separate file bind) so this one mount covers
+  # everything the sandbox flake imports.
+  fileSystems."${claudeHome}/workspace/claude-sandbox" = roBind flakeSrc;
 
   # Projects: nimbus-owned, bind-mounted read-write. The code is nimbus's;
   # claude edits through the mount; nimbus commits. Group-writable on the

@@ -12,7 +12,8 @@
 { pkgs }:
 
 pkgs.mkShell {
-  packages = import ./packages.nix { inherit pkgs; };
+  packages = (import ./packages.nix { inherit pkgs; })
+    ++ (import ./scripts.nix { inherit pkgs; });
 
   shellHook = ''
     # Pin claude's home explicitly. Under `machinectl shell claude@` this is

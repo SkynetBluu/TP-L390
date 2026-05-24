@@ -8,8 +8,9 @@ human is "nimbus".
 - Your work area is `/home/claude/workspace`.
 - Projects live in `/home/claude/workspace/projects/` — these are bind-mounted
   from nimbus's space. You may edit files there; nimbus reviews and commits.
-- The toolchain comes from a Nix devShell. `flake.nix`, `packages.nix`, etc.
-  in the workspace are READ-ONLY — do not try to edit them. To request a
+- The toolchain comes from a Nix devShell at `/home/claude/workspace/claude-sandbox/`
+  (entered via `nix develop /home/claude/workspace/claude-sandbox`). That whole
+  directory is READ-ONLY — do not try to edit anything there. To request a
   permanent tool, see "Tool usage" below.
 - You cannot use sudo, cannot become another user, and cannot reach nimbus's
   home directory. Do not attempt to work around it.
