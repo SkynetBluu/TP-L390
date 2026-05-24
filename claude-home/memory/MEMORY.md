@@ -1,0 +1,1 @@
+- [Split Bash chains into separate tool calls](feedback_split_bash_chains.md) — compound `&&` chains skip the user's per-command allow rules; split instead.

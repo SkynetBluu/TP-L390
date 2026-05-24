@@ -12,18 +12,21 @@ nimbus-owned directory bind-mounted read-write. Home state is managed by hand.
 │   ├── flake.nix
 │   ├── flake.lock               # generated on first `nix flake lock` (see setup)
 │   ├── devshell.nix             # env + shellHook (load-bearing)
-│   └── packages.nix             # the locked toolchain — single source of truth
+│   ├── packages.nix             # the locked toolchain — single source of truth
+│   └── fix-stale-mounts.sh      # recovery / refresh helper (see Daily use)
 ├── claude-home/                 # Tier 1 baseline; copied by hand into ~claude/.claude
 │   ├── CLAUDE.md
 │   └── settings.json
-└── modules/system/claude.nix    # the user, group, perms, machined, polkit, mounts
+├── overlays/claude-code-latest.nix  # also bind-mounted into claude's workspace
+└── modules/system/claude.nix    # the user, group, perms, polkit, mounts
 
 /home/nimbus/claude-projects/    # nimbus owns; bind-mounted RW -> claude workspace
 /home/claude/                    # claude:claude-shared 0750 (nimbus can read)
 └── workspace/
-    ├── flake.nix  flake.lock  devshell.nix  packages.nix   # RO bind mounts
-    ├── projects/                                            # RW bind mount
-    └── tool-usage.log                                       # claude's wishlist
+    ├── flake.nix  flake.lock  devshell.nix  packages.nix    # RO bind mounts
+    ├── claude-code-latest.nix                                # RO bind mount of overlay
+    ├── projects/                                             # RW bind mount
+    └── tool-usage.log                                        # claude's wishlist
 ```
 
 ## Integration into your flake
@@ -62,24 +65,35 @@ qbittorrent wrappedBinaries, AppArmor, polkit, sudo, PAM, GNOME Keyring.
 > reuses it (see `claude-sandbox/flake.nix`). Removing the wrapper does not
 > remove the overlay.
 
-## One-time setup (run as nimbus, after first rebuild)
+## One-time setup (run as nimbus)
 
 ```bash
-# 1. Create the projects source dir, group-owned so claude can write into it
-#    through the bind mount, and set a default ACL so new files stay shared.
+# 1. Make the bind-mount sources world-readable. The kernel enforces the
+#    file inode's mode bits even through a bind mount, so 0600 files (the
+#    default if your umask is 077) deny claude read access on its side.
+chmod 644 ~/.config/nixos/claude-sandbox/{flake.nix,devshell.nix,packages.nix} \
+          ~/.config/nixos/overlays/claude-code-latest.nix
+
+# 2. Create the projects source dir, group-owned so claude can write into it
+#    through the bind mount, with setgid + default ACL so new files stay shared.
 mkdir -p ~/claude-projects
 sudo chgrp claude-shared ~/claude-projects
 chmod 2770 ~/claude-projects                       # setgid: new files inherit group
 setfacl -d -m g:claude-shared:rwX ~/claude-projects
 
-# 2. Lock the devShell flake (generates claude-sandbox/flake.lock).
+# 3. Lock the devShell flake (generates claude-sandbox/flake.lock).
 cd ~/.config/nixos/claude-sandbox
 nix flake lock
+chmod 644 flake.lock
 
-# 3. Rebuild so the user, mounts, and polkit rule exist.
+# 4. Rebuild so the user, mounts, and polkit rule exist.
 sudo nixos-rebuild switch --flake ~/.config/nixos#l390
 
-# 4. Seed claude's home baseline (Tier 1). Manual, by design.
+# 5. Re-login (or `exec su - nimbus`). The rebuild added you to the
+#    claude-shared group, but existing shells keep their original supplementary
+#    groups — without this, ls /home/claude/.claude returns Permission denied.
+
+# 6. Seed claude's home baseline (Tier 1). Manual, by design.
 sudo cp -rT ~/.config/nixos/claude-home /home/claude/.claude
 sudo chown -R claude:claude /home/claude/.claude
 ```
@@ -95,6 +109,21 @@ claude                             # run the agent
 
 `nix develop` reads the RO-mounted flake. To get a one-off tool without
 leaving the shell: `nix shell nixpkgs#<tool>`.
+
+### After editing the bind-mounted source files
+
+Any edit to `flake.nix`, `flake.lock`, `devshell.nix`, `packages.nix`, or
+`overlays/claude-code-latest.nix` that goes through an atomic write
+(tmp + rename — almost every editor and `nix flake lock` itself) leaves
+claude's bind mount pointing at the old, now-orphaned inode. Refresh:
+
+```bash
+bash ~/.config/nixos/claude-sandbox/fix-stale-mounts.sh
+```
+
+The script is idempotent: it restarts each of the five file bind mounts
+(picking up the new inode), and if any target ever ended up as a directory
+instead of a file, it rmdir's + recreates the file before remounting.
 
 ## Promoting changes back (manual)
 
@@ -124,16 +153,18 @@ sudo chown claude:claude /home/claude/.claude/settings.json
 
 ## Verification after first rebuild
 
+Run these in a **fresh** shell (post-rebuild re-login), so `claude-shared`
+group membership is active:
+
 ```bash
-id claude                                    # uid=9000, groups: claude, claude-shared
+id | grep claude-shared                      # confirm the shell has the new group
 sudo passwd -S claude                        # 'L' (locked)
 getent group claude-shared                   # lists nimbus and claude
 stat -c '%U:%G %a' /home/claude              # claude:claude-shared 750
 machinectl shell claude@ /bin/sh -c 'echo $DISPLAY; id'   # DISPLAY empty; uid 9000
-findmnt /home/claude/workspace/flake.nix     # bind mount, ro
-findmnt /home/claude/workspace/projects      # bind mount, rw
+findmnt -t none | grep claude/workspace      # 5 file binds (ro) + 1 dir bind (rw)
 # nimbus can read claude's home, but claude cannot read nimbus's:
-ls /home/claude/.claude                      # works (group read)
+ls /home/claude/.claude                      # works (group read via claude-shared)
 machinectl shell claude@ /bin/sh -c 'cat /home/nimbus/.ssh/* 2>&1 | head -1'  # Permission denied
 ```
 

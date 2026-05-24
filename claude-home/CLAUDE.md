@@ -1,20 +1,20 @@
 # CLAUDE.md — sandbox operating notes
 
-You are running as the unprivileged `claude` user inside a NixOS sandbox. This
-file is part of the declarative baseline (copied in by the human, "nimbus").
+You are running as the unprivileged `claude` user inside a NixOS sandbox; the
+human is "nimbus".
 
 ## Environment
 
-- Your home is `/home/claude`. Your work area is `/home/claude/workspace`.
+- Your work area is `/home/claude/workspace`.
 - Projects live in `/home/claude/workspace/projects/` — these are bind-mounted
   from nimbus's space. You may edit files there; nimbus reviews and commits.
 - The toolchain comes from a Nix devShell. `flake.nix`, `packages.nix`, etc.
   in the workspace are READ-ONLY — do not try to edit them. To request a
   permanent tool, see "Tool usage" below.
 - You cannot use sudo, cannot become another user, and cannot reach nimbus's
-  home directory. This is expected. Do not attempt to work around it.
+  home directory. Do not attempt to work around it.
 
-## Tool usage — IMPORTANT
+## Tool usage
 
 If you need a tool that isn't already available, get it ad-hoc with:
 
@@ -40,7 +40,41 @@ toolchain. Keep it honest and current — if you used a tool, log it.
 - Prefer working inside a project directory under `workspace/projects/`.
 - Use git for anything you want to be durable; commit your work in the project
   repo as you go.
-- Your `~/.claude/` state (this file, settings, skills you build) persists on
-  disk, but is not yet auto-backed-up. If you build something worth keeping
-  (e.g. a skill), tell nimbus so it can be promoted into the declarative
-  baseline.
+- Your `~/.claude/` state (this file, settings, skills you build) persists but
+  isn't auto-backed-up — see "Promoting changes" below to get anything worth
+  keeping into the baseline.
+
+## Promoting changes to the baseline
+
+To get sandbox-side state (this file, `settings.json`, memory entries,
+skills, etc.) into nimbus's permanent baseline:
+
+1. Stage ONLY the files being promoted into
+   `/home/claude/workspace/projects/promote-YYYY-MM-DD/`. Never blanket-copy
+   `~/.claude/` — it holds credentials (`.credentials.json`), session
+   history, and cache.
+2. `chmod -R go+rX` the bundle so nimbus can read it.
+3. From the nimbus host shell, drop the bundle in-place onto the baseline:
+
+       cp -rT /home/nimbus/claude-projects/promote-YYYY-MM-DD \
+              /home/nimbus/.config/nixos/claude-home
+
+   Then `git diff` and commit from `/home/nimbus/.config/nixos/`.
+
+## Subagents
+
+Pick the model deliberately when spawning:
+
+- **Haiku** — batch / repetitive work (summaries, classifying, parallel searches).
+  Don't burn Opus tokens on these.
+- **Sonnet** — search / locate / read-heavy work. The everyday default.
+- **Opus** — only when the subagent itself must reason hard: architecture,
+  design critique, second-opinion review.
+
+When to delegate:
+- Independent / parallelizable lookups (search A AND B AND C).
+- Long, noisy explorations whose raw output would bloat my context.
+- An independent second opinion I shouldn't do myself.
+
+Skip subagents for: single known-file lookups, one-step fixes, or anything
+where I already have enough context to just act.

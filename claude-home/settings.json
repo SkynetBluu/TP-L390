@@ -2,7 +2,64 @@
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
   "env": {
     "DISABLE_AUTOUPDATER": "1",
-    "DISABLE_UPDATES": "1"
+    "DISABLE_UPDATES": "1",
+    "CLAUDE_CODE_PACKAGE_MANAGER_AUTO_UPDATE": "false"
   },
-  "includeCoAuthoredBy": false
+  "attribution": {
+    "commit": "",
+    "pr": ""
+  },
+  "theme": "dark",
+  "model": "opus",
+  "autoMemoryDirectory": "~/.claude/memory/",
+  "permissions": {
+    "allow": [
+      "Read",
+      "Glob",
+      "Grep",
+      "Bash(ls *)",
+      "Bash(pwd)",
+      "Bash(cat *)",
+      "Bash(head *)",
+      "Bash(tail *)",
+      "Bash(wc *)",
+      "Bash(file *)",
+      "Bash(stat *)",
+      "Bash(find *)",
+      "Bash(tree *)",
+      "Bash(which *)",
+      "Bash(realpath *)",
+      "Bash(echo *)",
+      "Bash(date *)",
+      "Bash(env)",
+      "Bash(id *)",
+      "Bash(whoami)",
+      "Bash(hostname)",
+      "Bash(uname *)",
+      "Bash(getfacl *)",
+      "Bash(rg *)",
+      "Bash(fd *)",
+      "Bash(jq *)",
+      "Bash(git status *)",
+      "Bash(git log *)",
+      "Bash(git diff *)",
+      "Bash(git show *)",
+      "Bash(git branch *)",
+      "Bash(git remote *)",
+      "Bash(git blame *)",
+      "Bash(git ls-files *)",
+      "Bash(nix shell *)",
+      "Bash(nix develop *)",
+      "Bash(nix flake *)",
+      "WebFetch",
+      "WebSearch",
+      "Edit(/home/claude/.claude/**)",
+      "Write(/home/claude/.claude/**)",
+      "Edit(.claude/**)",
+      "Write(.claude/**)"
+    ],
+    "deny": [
+      "Bash(rm -rf *)"
+    ]
+  }
 }
