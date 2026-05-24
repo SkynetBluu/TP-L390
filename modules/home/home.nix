@@ -27,6 +27,7 @@
     ./gtk.nix
     ./desktop-entries.nix
     ./scripts.nix
+    ./claude-launcher.nix
     ./waybar.nix
     ./rofi.nix
     ./mpv.nix

@@ -1,1 +1,2 @@
 - [Split Bash chains into separate tool calls](feedback_split_bash_chains.md) — compound `&&` chains skip the user's per-command allow rules; split instead.
+- [`!` prefix runs inside the sandbox](feedback_bang_prefix_in_sandbox.md) — same scope as my Bash tool; can't reach ~nimbus/ or host shell. Don't suggest it for host-side work.

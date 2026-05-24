@@ -53,10 +53,10 @@
       "Bash(nix flake *)",
       "WebFetch",
       "WebSearch",
-      "Edit(.claude/**)",
-      "Write(.claude/**)",
       "Edit(/home/claude/.claude/**)",
-      "Write(/home/claude/.claude/**)"
+      "Write(/home/claude/.claude/**)",
+      "Edit(.claude/**)",
+      "Write(.claude/**)"
     ],
     "deny": [
       "Bash(rm -rf *)"
