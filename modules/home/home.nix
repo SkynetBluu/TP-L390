@@ -28,6 +28,7 @@
     ./desktop-entries.nix
     ./scripts.nix
     ./claude-launcher.nix
+    ./claude-shared-umask.nix
     ./waybar.nix
     ./rofi.nix
     ./mpv.nix
