@@ -112,6 +112,10 @@
 
   programs.lazygit.enable = true;
 
+  # direnv
+  programs.direnv.enable = true;
+  programs.direnv.nix-direnv.enable = true;
+
   # ── Helix ─────────────────────────────────────────────────────────────────
   # Primary editor — set as system default via $EDITOR. Neovim stays available
   # via `nvim`/`vi`/`vim` as a fallback for plugin-heavy workflows.
