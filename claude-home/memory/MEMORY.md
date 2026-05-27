@@ -1,4 +1,5 @@
-- [Split Bash chains into separate tool calls](feedback_split_bash_chains.md) — compound `&&` chains skip the user's per-command allow rules; split instead.
+- [One bash command per tool call](feedback_split_bash_chains.md) — default to splitting chains/loops/scripts; carve-outs for bulk inner loops (>~5 mechanical repeats) and `nix shell`-wrapped tools.
 - [`!` prefix runs inside the sandbox](feedback_bang_prefix_in_sandbox.md) — same scope as my Bash tool; can't reach ~nimbus/ or host shell. Don't suggest it for host-side work.
 - [Files in claude-sandbox/ must be world-readable](feedback_claude_sandbox_world_readable.md) — dir bind + pure-mode flake eval aborts if claude can't read any file. New files: 644 (or 755 if executable).
 - [Self-hosted Forgejo instance](reference_forgejo.md) — `http://192.168.1.3:3030`, claude's user is `clawed`, HTTP auth via `~/.netrc`.
+- [claude-shared permissions for nimbus-copied files](reference_claude_shared_permissions.md) — group auto-set via setgid, but mode 644 (no group write); `chmod g+w` if claude needs to modify, or set nimbus umask 002.
