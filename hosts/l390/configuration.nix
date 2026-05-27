@@ -55,6 +55,9 @@
   services.thermald.enable = true;
   services.power-profiles-daemon.enable = false;
 
+  # udev rules for ST-Link
+  services.udev.packages = [ pkgs.stlink ];
+
   # boot.resumeDevice is set automatically by disko (resumeDevice=true on the
   # swap content in hosts/l390/disko-config.nix).
 
