@@ -15,7 +15,7 @@
 let
   # Pin the caveman-code CLI here. Bump explicitly when you want a newer
   # version; caveman picks it up on the next direnv reload.
-  cavemanVersion = "1.9.0";
+  cavemanVersion = "0.65.2";
 in
 pkgs.mkShell {
   packages = (import ./packages.nix { inherit pkgs; })
