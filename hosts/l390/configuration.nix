@@ -55,9 +55,21 @@
   services.thermald.enable = true;
   services.power-profiles-daemon.enable = false;
 
-  # udev rules for ST-Link
-  services.udev.packages = [ pkgs.stlink ];
+  # udev rules for ST-Link and Cypress chip (sigrok analyzer)
+  services.udev.packages = [
+    pkgs.stlink
+    pkgs.sigrok-cli
+  ];
+  services.udev.extraRules = ''
+    # fx2lafw logic analyzers (Cypress FX2 based, e.g. WeAct LogicAnalyzerV1)
+    # Pre-firmware Cypress default ID:
+    SUBSYSTEM=="usb", ATTRS{idVendor}=="04b4", ATTRS{idProduct}=="8613", MODE="0660", GROUP="plugdev", TAG+="uaccess"
+    # sigrok fx2lafw post-firmware ID:
+    SUBSYSTEM=="usb", ATTRS{idVendor}=="1d50", ATTRS{idProduct}=="608c", MODE="0660", GROUP="plugdev", TAG+="uaccess"
+  '';
 
+  users.groups.plugdev = { };
+  users.users.nimbus.extraGroups = [ "plugdev" ];
   # boot.resumeDevice is set automatically by disko (resumeDevice=true on the
   # swap content in hosts/l390/disko-config.nix).
 
@@ -79,6 +91,7 @@
     htop
     vim
     nano
+    ncdu
 
     # Hardware
     pciutils

@@ -62,6 +62,8 @@
     wl-clipboard-x11
     papirus-icon-theme # used by rofi (rofi.nix sets icon-theme = "Papirus-Dark")
     # fzf is installed via programs.fzf below (which also handles bash integration)
+    vlc
+    ffmpeg
   ];
 
   # config nicotine directories
