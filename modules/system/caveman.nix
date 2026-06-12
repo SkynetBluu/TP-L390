@@ -84,7 +84,7 @@ in
     description = "Caveman Code sandbox runtime";
     uid = cavemanUid;
     group = "caveman";
-    extraGroups = [ "caveman-shared" ];
+    extraGroups = [ "caveman-shared" "plugdev" ];
     home = cavemanHome;
     createHome = true;
     homeMode = "0750";

@@ -40,4 +40,17 @@ with pkgs; [
   # ── Network ───────────────────────────────────────────────────────────────
   curl
   wget
+
+  # ── Embedded / bare-metal (STM32F411 and friends) ─────────────────────────
+  # Promoted from projects/bare-metal-dev/flake.nix so every devShell that
+  # inherits from this sandbox (via `inputsFrom`) gets the ARM toolchain
+  # without redeclaring it. Keep here as long as bare-metal work is active;
+  # demote back to a per-project flake if it goes dormant.
+  gcc-arm-embedded   # arm-none-eabi-gcc/g++/gdb + newlib-nano
+  gnumake
+  stlink             # st-flash, st-info, st-util
+  openocd            # alternative flash/debug + gdbserver
+  minicom            # serial terminal for UART
+  pulseview          # logic analyzer GUI
+  sigrok-cli         # command-line captures
 ]
