@@ -77,19 +77,13 @@ in-process approval gate. Behave accordingly: when you reach for `rm -rf` or
 
 ## Promoting changes to the baseline
 
-Run inside the sandbox; the script prints the exact copy-paste command for
-nimbus to run on the host.
+"promote" with no qualifier = run `promote-caveman-home`. It prints a
+host-side `cp -rT` line for nimbus to copy-paste.
 
-- **`promote-caveman-home`** — bundles your live `~/.cave/{AGENTS.md,
-  settings.json, memory, skills, commands, agents}` for nimbus to overlay
-  onto `~/.config/nixos/caveman-home/`. The allowlist deliberately excludes
-  credentials, sessions, history, cache.
+- `promote-caveman-home` — bundles `~/.cave/{AGENTS.md, settings.json,
+  memory, skills, commands, agents}` → `~/.config/nixos/caveman-home/`.
+- `promote-nixos` — bundles `~/workspace/projects/my-conf/nixos/` worktree
+  diffs → `~/.config/nixos/`. Same script as the claude side.
 
-- **`promote-nixos`** — bundles worktree changes in
-  `~/workspace/projects/my-conf/nixos/` for nimbus to overlay onto
-  `~/.config/nixos/`. Handles adds, modifies, and deletions (emits
-  `cp -rT` + `git add` + `git rm` in the printed host one-liner). Same
-  script as the claude side, run as a different user.
-
-Per-machine state (`~/.netrc`, anything else with secrets) is NEVER in the
-bundle's allowlist — nimbus copies it in by hand once per machine.
+Secrets (`~/.netrc`, `~/.git-credentials`, etc.) are never bundled — nimbus
+copies them in by hand once per machine.

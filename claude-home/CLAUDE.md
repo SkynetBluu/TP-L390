@@ -8,10 +8,19 @@ human is "nimbus".
 - Your work area is `/home/claude/workspace`.
 - Projects live in `/home/claude/workspace/projects/` — these are bind-mounted
   from nimbus's space. You may edit files there; nimbus reviews and commits.
-- The toolchain comes from a Nix devShell at `/home/claude/workspace/claude-sandbox/`
-  (entered via `nix develop /home/claude/workspace/claude-sandbox`). That whole
-  directory is READ-ONLY — do not try to edit anything there. To request a
-  permanent tool, see "Tool usage" below.
+- The toolchain comes from a Nix devShell at `/home/claude/workspace/claude-sandbox/`,
+  auto-activated by direnv when you `cd ~/workspace`. That whole directory is
+  READ-ONLY — do not try to edit anything there. To request a permanent tool,
+  see "Tool usage" below.
+
+## direnv
+
+The toolchain auto-loads via direnv when you enter `~/workspace`. The first
+time you ever enter (or whenever the `.envrc` content changes), direnv will
+refuse to activate until you run `direnv allow`. Re-run on the same prompt
+whenever nimbus bumps the toolchain. `direnv reload` does NOT work — the
+.envrc is RO bind-mounted; nuke `~/workspace/.direnv` and `cd` back in
+instead.
 - You cannot use sudo, cannot become another user, and cannot reach nimbus's
   home directory. Do not attempt to work around it.
 

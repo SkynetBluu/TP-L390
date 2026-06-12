@@ -49,3 +49,9 @@ Run from a nimbus host shell:
 
 Then review with 'git -C ~/.config/nixos diff claude-home/' and commit when satisfied.
 EOF
+
+# Prune: keep the 5 most-recent promote-claude-home-* dirs in BUNDLE_PARENT.
+# Timestamps sort lexically, so the bundle we just wrote (latest stamp) is
+# always position 1 and survives.
+find "$BUNDLE_PARENT" -maxdepth 1 -type d -name 'promote-claude-home-*' 2>/dev/null \
+  | sort -r | tail -n +6 | xargs -r rm -rf

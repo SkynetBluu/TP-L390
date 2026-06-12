@@ -41,7 +41,8 @@ pkgs.mkShell {
     # core toolchain (reproducible-ish, not floating with a channel).
     export NIX_PATH="nixpkgs=${pkgs.path}"
 
-    if [ -t 1 ]; then
+    # Banner only on direct `nix develop`, not on every direnv reload.
+    if [ -t 1 ] && [ -z "$DIRENV_DIR" ]; then
       echo "claude sandbox — node $(${pkgs.nodejs_22}/bin/node --version), $(claude --version 2>/dev/null || echo 'claude-code')"
       echo "workspace: $CLAUDE_WORKSPACE   projects: $CLAUDE_WORKSPACE/projects"
     fi

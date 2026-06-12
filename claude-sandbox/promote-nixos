@@ -108,3 +108,9 @@ done
   echo
   echo "Then: rebuild"
 }
+
+# Prune: keep the 5 most-recent promote-nixos-* dirs in BUNDLE_PARENT.
+# Timestamps sort lexically, so the bundle we just wrote (latest stamp) is
+# always position 1 and survives.
+find "$BUNDLE_PARENT" -maxdepth 1 -type d -name 'promote-nixos-*' 2>/dev/null \
+  | sort -r | tail -n +6 | xargs -r rm -rf

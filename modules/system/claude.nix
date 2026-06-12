@@ -151,6 +151,10 @@ in
   # everything the sandbox flake imports.
   fileSystems."${claudeHome}/workspace/claude-sandbox" = roBind flakeSrc;
 
+  # Workspace-root .envrc so direnv auto-activates the devShell on `cd ~/workspace`.
+  # Same pattern as caveman.nix.
+  fileSystems."${claudeHome}/workspace/.envrc" = roBind "${flakeSrc}/.envrc";
+
   # Projects: nimbus-owned, bind-mounted read-write. The code is nimbus's;
   # claude edits through the mount; nimbus commits. Group-writable on the
   # source side (set up once by nimbus, see README) lets claude save files.
