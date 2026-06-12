@@ -1,0 +1,9 @@
+# direnv / nix-direnv caches. Created by direnv when loading .envrc — in
+# caveman-sandbox/ on the host it can appear if nimbus cd's into the source
+# dir and direnv picks up the bind-mount source .envrc (the use-flake path
+# doesn't resolve there, but direnv still scaffolds the cache).
+.direnv/
+
+# nix-build / nix build result symlinks.
+result
+result-*
