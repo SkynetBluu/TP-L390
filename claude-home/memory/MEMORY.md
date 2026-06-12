@@ -8,3 +8,4 @@
 - [Caveman sandbox (sibling to claude)](reference_caveman_sandbox.md) — second sandbox user (uid 9001, group caveman-shared) running caveman-code; config in `~/.cave/`, instruction file is `AGENTS.md`.
 - [Flake symlinks can't cross flake boundaries](feedback_flake_symlink_cross_boundary.md) — pure-mode eval blocks reads outside the flake's store path; share files via copy + sync note or a flake input.
 - [`direnv reload` fails on RO-mounted .envrc](feedback_direnv_ro_envrc.md) — chtimes blocked; nuke `.direnv/` and `cd` back in instead.
+- [udev `:=` is locked against later override](feedback_udev_final_assignment_lock.md) — to tighten upstream rules from `services.udev.packages`, drop the package and ship full rules in `extraRules`.
