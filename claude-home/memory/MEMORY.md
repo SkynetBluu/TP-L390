@@ -1,5 +1,10 @@
-- [One bash command per tool call](feedback_split_bash_chains.md) — default to splitting chains/loops/scripts; carve-outs for bulk inner loops (>~5 mechanical repeats) and `nix shell`-wrapped tools.
+- [One bash command per tool call](feedback_split_bash_chains.md) — default to splitting chains/loops/scripts; carve-outs for uniform bulk loops (same command, varying data) and `nix shell`-wrapped tools.
 - [`!` prefix runs inside the sandbox](feedback_bang_prefix_in_sandbox.md) — same scope as my Bash tool; can't reach ~nimbus/ or host shell. Don't suggest it for host-side work.
 - [Files in claude-sandbox/ must be world-readable](feedback_claude_sandbox_world_readable.md) — dir bind + pure-mode flake eval aborts if claude can't read any file. New files: 644 (or 755 if executable).
 - [Self-hosted Forgejo instance](reference_forgejo.md) — `http://192.168.1.3:3030`, claude's user is `clawed`, HTTP auth via `~/.netrc`.
 - [claude-shared permissions for nimbus-copied files](reference_claude_shared_permissions.md) — group auto-set via setgid, but mode 644 (no group write); `chmod g+w` if claude needs to modify, or set nimbus umask 002.
+- [Code blocks reproduced verbatim from source](feedback_code_verbatim_policy.md) — book-distillation work (RTA_Skill, skillset/): no paraphrasing of code; variable renaming OK if consistent, comments may be rewritten, skip code for license-restricted sources.
+- [Nimbus has Claude Max subscription](user_claude_max_subscription.md) — OAuth via `/login` is the default for Anthropic-compatible agents; no separate API key needed.
+- [Caveman sandbox (sibling to claude)](reference_caveman_sandbox.md) — second sandbox user (uid 9001, group caveman-shared) running caveman-code; config in `~/.cave/`, instruction file is `AGENTS.md`.
+- [Flake symlinks can't cross flake boundaries](feedback_flake_symlink_cross_boundary.md) — pure-mode eval blocks reads outside the flake's store path; share files via copy + sync note or a flake input.
+- [`direnv reload` fails on RO-mounted .envrc](feedback_direnv_ro_envrc.md) — chtimes blocked; nuke `.direnv/` and `cd` back in instead.
