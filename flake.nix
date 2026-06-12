@@ -90,6 +90,7 @@
           ./modules/system/fonts.nix
           ./modules/system/security.nix
           ./modules/system/claude.nix
+          ./modules/system/caveman.nix
 
           # Secrets management
           sops-nix.nixosModules.sops

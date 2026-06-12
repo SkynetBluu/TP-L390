@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+# promote-caveman-home
+# Bundle ~/.cave/{AGENTS.md, settings.json, memory/, skills/, commands/,
+# agents/} so they can be overlaid onto ~/.config/nixos/caveman-home/.
+# The allowlist deliberately excludes credentials, sessions, history, cache,
+# plans, file-history, shell-snapshots, paste-cache — none of those belong
+# in the baseline.
+#
+# Direction: sandbox → host. The sandbox files replace the host files.
+
+set -euo pipefail
+
+SOURCE=/home/caveman/.cave
+BUNDLE_PARENT=/home/caveman/workspace/projects
+STAMP=$(date +%Y-%m-%d-%H%M%S)
+BUNDLE_NAME=promote-caveman-home-$STAMP
+BUNDLE_DIR=$BUNDLE_PARENT/$BUNDLE_NAME
+
+ITEMS=(AGENTS.md settings.json memory skills commands agents)
+
+mkdir -p "$BUNDLE_DIR"
+
+PRESENT=()
+for item in "${ITEMS[@]}"; do
+  src=$SOURCE/$item
+  if [ ! -e "$src" ]; then
+    echo "promote-caveman-home: $item not present in ~/.cave/ — skipping" >&2
+    continue
+  fi
+  cp -rT "$src" "$BUNDLE_DIR/$item"
+  PRESENT+=("$item")
+done
+
+if [ "${#PRESENT[@]}" -eq 0 ]; then
+  echo "promote-caveman-home: nothing to bundle" >&2
+  exit 1
+fi
+
+chmod -R go+rX "$BUNDLE_DIR"
+
+cat <<EOF
+
+Bundle staged at: ~/caveman-projects/$BUNDLE_NAME
+Items: ${PRESENT[*]}
+
+Run from a nimbus host shell:
+
+  cp -rT ~/caveman-projects/$BUNDLE_NAME ~/.config/nixos/caveman-home/ && \\
+    git -C ~/.config/nixos status --short caveman-home/
+
+Then review with 'git -C ~/.config/nixos diff caveman-home/' and commit when satisfied.
+EOF

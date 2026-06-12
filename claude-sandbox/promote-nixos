@@ -7,11 +7,21 @@
 # Direction: sandbox → host. The sandbox files replace the host files.
 # Additions and modifications go through cp -rT; deletions go through
 # `git rm`. Renames are flagged as warnings — handle by hand.
+#
+# DUPLICATE: an identical copy lives at caveman-sandbox/promote-nixos. A
+# symlink would be cleaner but each sandbox is its own flake and pure-mode
+# eval can't read across flake boundaries. Keep the two files byte-identical;
+# `diff claude-sandbox/promote-nixos caveman-sandbox/promote-nixos` should
+# print nothing.
 
 set -euo pipefail
 
-CLONE=/home/claude/workspace/projects/my-conf/nixos
-BUNDLE_PARENT=/home/claude/workspace/projects
+# Paths derived from $HOME / $USER so this script works under any sandbox
+# user that has /home/<user>/workspace/projects/my-conf checked out and a
+# host-side ~/<user>-projects/ bind-mounted in. Currently: claude, caveman.
+CLONE=$HOME/workspace/projects/my-conf/nixos
+BUNDLE_PARENT=$HOME/workspace/projects
+HOST_PROJECTS="~/${USER}-projects"
 STAMP=$(date +%Y-%m-%d-%H%M%S)
 BUNDLE_NAME=promote-nixos-$STAMP
 BUNDLE_DIR=$BUNDLE_PARENT/$BUNDLE_NAME
@@ -74,7 +84,7 @@ done
 # `git rm` for deletions, then `git add` for the rest, then status.
 {
   echo
-  echo "Bundle staged at: ~/claude-projects/$BUNDLE_NAME"
+  echo "Bundle staged at: $HOST_PROJECTS/$BUNDLE_NAME"
   echo "Add/modify: ${#ADD_PATHS[@]}    Delete: ${#DEL_PATHS[@]}"
   echo
   echo "Run from a nimbus host shell:"
@@ -84,7 +94,7 @@ done
   printed_any=0
 
   if [ "${#ADD_PATHS[@]}" -gt 0 ]; then
-    echo "${prefix}cp -rT ~/claude-projects/$BUNDLE_NAME ~/.config/nixos/${cont}"
+    echo "${prefix}cp -rT $HOST_PROJECTS/$BUNDLE_NAME ~/.config/nixos/${cont}"
     echo "${prefix}  git -C ~/.config/nixos add$add_args${cont}"
     printed_any=1
   fi

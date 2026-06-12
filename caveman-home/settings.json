@@ -1,0 +1,7 @@
+{
+  "env": {
+    "CAVE_CACHE_RETENTION": "long"
+  },
+  "theme": "dark",
+  "includeCoAuthoredBy": false
+}
