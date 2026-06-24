@@ -10,7 +10,10 @@
     };
 
     # Hardware profiles — lenovo-thinkpad-x390 is closest match for L390
-    nixos-hardware.url = "github:NixOS/nixos-hardware/master";
+    nixos-hardware = {
+      url = "github:NixOS/nixos-hardware/master";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
 
     # Declarative disk partitioning
     disko = {
