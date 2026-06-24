@@ -142,9 +142,6 @@
     pavucontrol
     inputs.nt-helper.packages.${pkgs.stdenv.hostPlatform.system}.default
 
-    # Bluetooth
-    blueman
-
     # Firmware
     fwupd
 
@@ -154,7 +151,6 @@
 
   # ── Services ──────────────────────────────────────────────────────────────
 
-  services.blueman.enable = true;
   services.fwupd.enable = true;
   services.smartd.enable = true;
   services.upower.enable = true; # consumed by waybar battery + perf-mode-daemon

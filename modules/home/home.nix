@@ -306,7 +306,6 @@
         "awww-daemon & for i in $(seq 1 50); do awww query >/dev/null 2>&1 && break; sleep 0.05; done; awww img ${theme.wallpaper}"
         "wl-paste --type text --watch cliphist store"
         "nm-applet --indicator"
-        "blueman-applet"
         "bluelight-auto"
         "perf-mode-daemon"
       ];
