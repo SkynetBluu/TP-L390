@@ -6,6 +6,20 @@
 let
   # Pin Mesa to Hyprland's flake input to prevent FPS drops from version mismatch
   hyprlandPkgs = inputs.hyprland.inputs.nixpkgs.legacyPackages.${pkgs.stdenv.hostPlatform.system};
+
+  # tuigreet launch wrapper.
+  # Kept as a shell script (not inlined into greetd's TOML `command =`) because
+  # greetd's TOML parser rejects unescaped newlines inside the `command` value,
+  # and inlining the full invocation makes the Nix expression fragile to quoting.
+  # The TOML side then just references a single store path.
+  tuigreetCmd = pkgs.writeShellScript "tuigreet-launch" ''
+    exec ${pkgs.tuigreet}/bin/tuigreet \
+      --time \
+      --remember \
+      --asterisks \
+      --sessions ${config.services.displayManager.sessionData.desktops}/share/wayland-sessions \
+      --cmd "uwsm start -eD Hyprland hyprland-uwsm.desktop"
+  '';
 in
 {
   # ── Mesa (pinned to Hyprland flake) ──────────────────────────────────────
@@ -34,9 +48,9 @@ in
       default_session = {
         # --remember-session omitted: only Hyprland is enabled, so there's
         # nothing to remember between sessions.
-        command = ''${pkgs.tuigreet}/bin/tuigreet --time --remember --asterisks --sessions
- ${config.services.displayManager.sessionData.desktops}/share/wayland-sessions --cmd "uwsm start
- -eD Hyprland hyprland-uwsm.desktop"'';
+        # Command lives in the tuigreetCmd shell script above — keeps the
+        # TOML value a single store path.
+        command = "${tuigreetCmd}";
         user = "greeter";
       };
       # Auto-login on boot — runs once, no password. Logout falls back to default_session.
