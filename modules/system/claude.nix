@@ -103,7 +103,10 @@ in
 
     # Workspace skeleton (so the bind-mount targets exist before mounting).
     "d ${claudeHome}/workspace 0750 claude claude-shared - -"
-    "d ${claudeHome}/workspace/claude-sandbox 0750 claude claude-shared - -"
+    # Bind-mount target: created if missing, but no explicit mode/owner so
+    # tmpfiles doesn't try to fchmod the RO mount on subsequent boots.
+    # The bind overlays whatever perms the underlying dir has anyway.
+    "d ${claudeHome}/workspace/claude-sandbox - - - - -"
     "d ${projectsDst} 0750 claude claude-shared - -"
 
     # Source of the projects bind mount (nimbus-side). Re-asserted on every
@@ -116,8 +119,12 @@ in
     # Default ACL: anything claude creates under its home stays readable by
     # the claude-shared group (so nimbus can always inspect it), without
     # making it group-writable. Capital X = dirs get +x, files don't.
-    "A+ ${claudeHome} - - - - d:group:claude-shared:r-X"
-    "A+ ${claudeHome} - - - - group:claude-shared:r-X"
+    # Non-recursive (a+, not A+): the default ACL propagates through the
+    # POSIX inheritance chain to all new children, and recursive walks here
+    # would cross into the RO bind mounts under ~/workspace and fail with
+    # EROFS on every file inside claude-sandbox/ and on workspace/.envrc.
+    "a+ ${claudeHome} - - - - d:group:claude-shared:r-X"
+    "a+ ${claudeHome} - - - - group:claude-shared:r-X"
   ];
 
   # ── machinectl entry ──────────────────────────────────────────────────────

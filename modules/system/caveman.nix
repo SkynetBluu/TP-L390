@@ -97,7 +97,11 @@ in
   systemd.tmpfiles.rules = [
     "z ${cavemanHome} 0750 caveman caveman-shared - -"
     "d ${cavemanHome}/workspace 0750 caveman caveman-shared - -"
-    "d ${cavemanHome}/workspace/caveman-sandbox 0750 caveman caveman-shared - -"
+    # Bind-mount target dirs: created if missing (default 0755 root:root
+    # briefly, until the bind activates), but no explicit mode/owner so
+    # tmpfiles doesn't try to fchmod the RO mount on subsequent boots.
+    # The bind overlays whatever perms the underlying dir has anyway.
+    "d ${cavemanHome}/workspace/caveman-sandbox - - - - -"
     "d ${projectsDst} 0750 caveman caveman-shared - -"
 
     # Source-side projects dir (nimbus-side), re-asserted on every rebuild.
@@ -105,8 +109,12 @@ in
     "A+ ${projectsSrc} - - - - d:group:caveman-shared:rwX"
 
     # Default ACL: anything caveman creates stays group-readable by nimbus.
-    "A+ ${cavemanHome} - - - - d:group:caveman-shared:r-X"
-    "A+ ${cavemanHome} - - - - group:caveman-shared:r-X"
+    # Non-recursive (a+, not A+): the default ACL propagates through the
+    # POSIX inheritance chain to all new children, and recursive walks here
+    # would cross into the RO bind mounts under ~/workspace and fail with
+    # EROFS on every file inside caveman-sandbox/ and on workspace/.envrc.
+    "a+ ${cavemanHome} - - - - d:group:caveman-shared:r-X"
+    "a+ ${cavemanHome} - - - - group:caveman-shared:r-X"
   ];
 
   # ── machinectl entry ──────────────────────────────────────────────────────
