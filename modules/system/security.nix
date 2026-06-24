@@ -100,6 +100,14 @@ in
     hyprlock = { };
   };
 
+  # ── Resource limits ───────────────────────────────────────────────────────
+  # 1024 FDs default is too low for modern Wayland sessions; pipewire +
+  # waybar + hyprland plugins + portals can exhaust it during activation.
+  security.pam.loginLimits = [
+    { domain = "*"; type = "soft"; item = "nofile"; value = "65536"; }
+    { domain = "*"; type = "hard"; item = "nofile"; value = "1048576"; }
+  ];
+
   # ── GNOME Keyring ─────────────────────────────────────────────────────────
   # Secret Service provider for Electron credential storage
   services.gnome.gnome-keyring.enable = true;

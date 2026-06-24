@@ -34,14 +34,9 @@ in
       default_session = {
         # --remember-session omitted: only Hyprland is enabled, so there's
         # nothing to remember between sessions.
-        command = ''
-          ${pkgs.tuigreet}/bin/tuigreet \
-            --time \
-            --remember \
-            --asterisks \
-            --sessions ${config.services.displayManager.sessionData.desktops}/share/wayland-sessions \
-            --cmd "uwsm start -eD Hyprland hyprland-uwsm.desktop"
-        '';
+        command = ''${pkgs.tuigreet}/bin/tuigreet --time --remember --asterisks --sessions
+ ${config.services.displayManager.sessionData.desktops}/share/wayland-sessions --cmd "uwsm start
+ -eD Hyprland hyprland-uwsm.desktop"'';
         user = "greeter";
       };
       # Auto-login on boot — runs once, no password. Logout falls back to default_session.

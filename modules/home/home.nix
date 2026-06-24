@@ -64,6 +64,7 @@
     # fzf is installed via programs.fzf below (which also handles bash integration)
     vlc
     ffmpeg
+    cool-retro-term
   ];
 
   # config nicotine directories
@@ -217,10 +218,10 @@
   };
 
   # ── Hyprland (home config) ────────────────────────────────────────────────
-
   wayland.windowManager.hyprland = {
 
     enable = true;
+    configType = "hyprlang";
     package = inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.hyprland;
     xwayland.enable = true;
 

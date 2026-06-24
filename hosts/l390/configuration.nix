@@ -77,6 +77,11 @@
     # ── fx2lafw logic analyzers (Cypress FX2 based) ──────────────────────
     SUBSYSTEM=="usb", ATTRS{idVendor}=="04b4", ATTRS{idProduct}=="8613", MODE="0660", GROUP="plugdev", TAG+="uaccess"
     SUBSYSTEM=="usb", ATTRS{idVendor}=="1d50", ATTRS{idProduct}=="608c", MODE="0660", GROUP="plugdev", TAG+="uaccess"
+  
+    # ── CH343 / CH340 USB-serial bridges (QinHeng) ─────────────────────
+    SUBSYSTEM=="tty", SUBSYSTEMS=="usb", ATTRS{idVendor}=="1a86", ATTRS{idProduct}=="55d2", MODE="0660", GROUP="plugdev", TAG+="uaccess", SYMLINK+="ttyCH343_%n"
+    SUBSYSTEM=="tty", SUBSYSTEMS=="usb", ATTRS{idVendor}=="1a86", ATTRS{idProduct}=="7522", MODE="0660", GROUP="plugdev", TAG+="uaccess", SYMLINK+="ttyCH340_%n"
+    SUBSYSTEM=="tty", SUBSYSTEMS=="usb", ATTRS{idVendor}=="1a86", ATTRS{idProduct}=="7523", MODE="0660", GROUP="plugdev", TAG+="uaccess", SYMLINK+="ttyCH340_%n"
   '';
   users.groups.plugdev = { };
   users.users.nimbus.extraGroups = [ "plugdev" ];
