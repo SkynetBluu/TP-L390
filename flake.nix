@@ -4,6 +4,10 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
 
+    # Pinned nixpkgs for KiCad 10.0.4 (landed 2026-06-26).
+    # Surgical overlay avoids bumping the main nixpkgs by ~4 months.
+    nixpkgs-kicad.url = "github:NixOS/nixpkgs/d9f90851b8997ee51b72390b76bff09753c84f54";
+
     home-manager = {
       url = "github:nix-community/home-manager/master";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -40,7 +44,7 @@
     };
   };
 
-  outputs = { self, nixpkgs, home-manager, nixos-hardware, disko, hyprland, hy3, sops-nix, ... } @ inputs:
+  outputs = { self, nixpkgs, nixpkgs-kicad, home-manager, nixos-hardware, disko, hyprland, hy3, sops-nix, ... } @ inputs:
     let
       system = "x86_64-linux";
 
@@ -51,6 +55,13 @@
           claude-code = import ./claude-sandbox/claude-code-latest.nix {
             inherit (prev) lib fetchurl claude-code patchelf glibc stdenv;
           };
+        })
+        # KiCad 10.0.4 from pinned nixpkgs (main nixpkgs still on 9.0.7)
+        (final: prev: {
+          kicad = (import nixpkgs-kicad {
+            inherit system;
+            config.allowUnfree = true;
+          }).kicad;
         })
       ];
 
